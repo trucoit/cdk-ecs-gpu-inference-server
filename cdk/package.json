@@ -19,7 +19,8 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint . && prettier --check .",
     "lint:fix": "eslint . --fix && prettier --write .",
-    "test": "jest"
+    "test": "jest",
+    "synth": "cdk synth"
   },
   "peerDependencies": {
     "aws-cdk-lib": "^2.219.0",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "@types/node": "^22.0.0",
+    "aws-cdk": "^2.1029.0",
     "aws-cdk-lib": "^2.219.0",
     "cdk-nag": "^2.35.0",
     "constructs": "^10.3.0",

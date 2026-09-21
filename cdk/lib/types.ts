@@ -1,4 +1,5 @@
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
 import { Size } from 'aws-cdk-lib';
 import { InferenceContainerProps } from './inference-container';
 
@@ -72,6 +73,25 @@ export interface GpuInferenceBaseProps {
    * @default 14
    */
   readonly logRetentionDays?: number;
+
+  /**
+   * Reuse an existing ECS cluster instead of creating one. Pass this to run
+   * several inference services in a single cluster (the first instance creates
+   * the cluster, later instances reuse it).
+   *
+   * @default - a new cluster is created
+   */
+  readonly cluster?: ecs.Cluster;
+
+  /**
+   * Reuse an existing Managed Instances GPU capacity provider instead of
+   * creating one. When set, this construct does not create an instance security
+   * group. Typically paired with {@link cluster} to share GPU capacity across
+   * services.
+   *
+   * @default - a new capacity provider is created and associated with the cluster
+   */
+  readonly capacityProvider?: ecs.ManagedInstancesCapacityProvider;
 }
 
 /**

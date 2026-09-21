@@ -3,10 +3,9 @@
 # Deploy and exercise the sample app. It consumes the library from ../cdk as a
 # file: dependency, so `install` builds the library first, then installs here.
 
-.PHONY: install check-docker synth diff deploy destroy bootstrap template invoke-queue invoke-api clean
+.PHONY: install check-docker synth diff deploy destroy bootstrap invoke-queue invoke-api clean
 
 CDK = node_modules/.bin/cdk
-TEMPLATE_DIR = ../templates
 # Override to target one stack, e.g. `make deploy STACK=GpuInferenceApiExample`.
 STACK ?= --all
 # Model + prompt used by the invoke helpers (keep MODEL in sync with lib/common.ts).
@@ -35,15 +34,6 @@ synth: install
 diff: install
 	@$(CDK) diff $(STACK)
 
-# Regenerate the committed example templates under templates/. Uses a dedicated
-# output dir so it never collides with a running `deploy`/`synth` on cdk.out.
-# No Docker needed: synth stages the worker asset context and hashes it.
-template: install
-	@mkdir -p $(TEMPLATE_DIR)
-	@$(CDK) synth GpuInferenceQueueExample --output .template-out 2>/dev/null > $(TEMPLATE_DIR)/gpu-inference-queue.yaml
-	@$(CDK) synth GpuInferenceApiExample --output .template-out 2>/dev/null > $(TEMPLATE_DIR)/gpu-inference-api.yaml
-	@echo "[OK] template"
-
 # One-time per account/region before the first deploy.
 bootstrap: check-docker install
 	@$(CDK) bootstrap
@@ -60,7 +50,7 @@ invoke-queue:
 
 # Call the API stack's ALB endpoint (internet-facing in this sample).
 invoke-api:
-	@API_URL=$$(aws cloudformation describe-stacks --stack-name GpuInferenceApiExample \
+	@API_URL=$$(aws cloudformation describe-stacks --stack-name GpuInferenceSample \
 	  --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text); \
 	echo "POST $$API_URL/v1/chat/completions"; \
 	curl -sS "$$API_URL/v1/chat/completions" -H 'Content-Type: application/json' \

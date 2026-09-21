@@ -43,10 +43,9 @@ jobs:
         working-directory: cdk
       - run: make build
         working-directory: cdk
-
-      # Sample: regenerate the committed example templates from the CDK app.
+      # Regenerate the standalone, parameterized CFN templates (queue + api).
       - run: make template
-        working-directory: sample
+        working-directory: cdk
 
       # On push, commit the regenerated templates back if they changed.
       - name: Commit regenerated templates

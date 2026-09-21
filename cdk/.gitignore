@@ -13,6 +13,7 @@ dist
 
 # CDK synth output and asset staging
 cdk.out
+.template-out
 .cdk.staging
 cdk.context.json
 

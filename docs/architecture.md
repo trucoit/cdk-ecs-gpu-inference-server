@@ -2,9 +2,14 @@
 
 Both modes share one compute core and differ only in how work reaches the model.
 
+Each mode construct creates its own cluster and capacity provider by default, but both
+accept an existing `cluster` and `capacityProvider`. Passing them lets several services run
+in one cluster (the sample does this: the queue service creates the cluster and the API
+service reuses it), which keeps the account to a single VPC and cluster.
+
 ## Shared core (`GpuInferenceBase`)
 
-- **ECS cluster** with enhanced Container Insights.
+- **ECS cluster** with enhanced Container Insights (or a reused one passed via `cluster`).
 - **Managed Instances capacity provider** that selects GPU hosts by attribute (NVIDIA
   accelerator, 1 GPU, 16 GiB VRAM or more, 4 to 16 vCPU, 16 to 64 GiB memory by default,
   which favors low-cost families such as g4dn). ECS launches, patches, and drains the EC2

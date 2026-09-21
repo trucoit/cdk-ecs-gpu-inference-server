@@ -22,6 +22,6 @@
     "resolveJsonModule": true,
     "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["lib/**/*.ts", "test/**/*.ts"],
+  "include": ["lib/**/*.ts", "test/**/*.ts", "templates/**/*.ts"],
   "exclude": ["node_modules", "dist", "cdk.out"]
 }

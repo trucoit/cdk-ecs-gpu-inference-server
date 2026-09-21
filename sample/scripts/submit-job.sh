@@ -6,7 +6,7 @@
 set -euo pipefail
 
 PROMPT="${1:-Hello, who are you?}"
-STACK="${STACK_NAME:-GpuInferenceQueueExample}"
+STACK="${STACK_NAME:-GpuInferenceSample}"
 
 output() {
   aws cloudformation describe-stacks --stack-name "$STACK" \

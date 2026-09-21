@@ -38,8 +38,8 @@ export abstract class GpuInferenceBase extends Construct {
   public readonly modelContainer: ecs.ContainerDefinition;
   /** Security group on the task ENIs. */
   public readonly taskSecurityGroup: ec2.SecurityGroup;
-  /** Security group on the GPU instances. */
-  public readonly instanceSecurityGroup: ec2.SecurityGroup;
+  /** Security group on the GPU instances. Set only when this construct creates the capacity provider. */
+  public readonly instanceSecurityGroup?: ec2.SecurityGroup;
   /** CloudWatch log group for the model container. */
   public readonly modelLogGroup: logs.LogGroup;
 
@@ -57,22 +57,28 @@ export abstract class GpuInferenceBase extends Construct {
     this.subnets = props.vpc.selectSubnets(props.vpcSubnets).subnets;
 
     this.taskSecurityGroup = createEgressSecurityGroup(this, 'TaskSecurityGroup', props.vpc, 'GPU inference task ENIs');
-    this.instanceSecurityGroup = createEgressSecurityGroup(
-      this,
-      'InstanceSecurityGroup',
-      props.vpc,
-      'GPU inference instances',
-    );
 
-    this.cluster = createCluster(this, 'Cluster', props.vpc, this.projectName);
-    this.capacityProvider = createGpuCapacityProvider(
-      this,
-      'GpuCapacity',
-      this.cluster,
-      this.subnets,
-      [this.instanceSecurityGroup],
-      props.gpuInstanceRequirements,
-    );
+    // Reuse a shared cluster/capacity provider when given, so several services
+    // can live in one cluster. Otherwise create them here.
+    this.cluster = props.cluster ?? createCluster(this, 'Cluster', props.vpc);
+    if (props.capacityProvider) {
+      this.capacityProvider = props.capacityProvider;
+    } else {
+      this.instanceSecurityGroup = createEgressSecurityGroup(
+        this,
+        'InstanceSecurityGroup',
+        props.vpc,
+        'GPU inference instances',
+      );
+      this.capacityProvider = createGpuCapacityProvider(
+        this,
+        'GpuCapacity',
+        this.cluster,
+        this.subnets,
+        [this.instanceSecurityGroup],
+        props.gpuInstanceRequirements,
+      );
+    }
 
     this.modelLogGroup = new logs.LogGroup(this, 'ModelLogs', {
       logGroupName: `/ecs/${this.projectName}/model`,

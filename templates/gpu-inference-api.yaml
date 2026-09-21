@@ -1,281 +1,23 @@
+Description: "GPU inference (API mode): vLLM behind an internal ALB on ECS Managed Instances."
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC to deploy into.
+  PrivateSubnetId1:
+    Type: AWS::EC2::Subnet::Id
+    Description: First private subnet (needs egress to pull images and reach AWS APIs).
+  PrivateSubnetId2:
+    Type: AWS::EC2::Subnet::Id
+    Description: Second private subnet (different AZ).
+  ModelId:
+    Type: String
+    Default: Qwen/Qwen2.5-1.5B-Instruct
+    Description: Model the vLLM server loads.
+  ModelImage:
+    Type: String
+    Default: vllm/vllm-openai:v0.6.6
+    Description: OpenAI-compatible model server image.
 Resources:
-  Vpc8378EB38:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsHostnames: true
-      EnableDnsSupport: true
-      InstanceTenancy: default
-      Tags:
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/Resource
-  VpcPublicSubnet1Subnet5C2D37C4:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone:
-        Fn::Select:
-          - 0
-          - Fn::GetAZs: ""
-      CidrBlock: 10.0.0.0/18
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: aws-cdk:subnet-name
-          Value: Public
-        - Key: aws-cdk:subnet-type
-          Value: Public
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc/PublicSubnet1
-      VpcId:
-        Ref: Vpc8378EB38
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PublicSubnet1/Subnet
-  VpcPublicSubnet1RouteTable6C95E38E:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      Tags:
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc/PublicSubnet1
-      VpcId:
-        Ref: Vpc8378EB38
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PublicSubnet1/RouteTable
-  VpcPublicSubnet1RouteTableAssociation97140677:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: VpcPublicSubnet1RouteTable6C95E38E
-      SubnetId:
-        Ref: VpcPublicSubnet1Subnet5C2D37C4
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PublicSubnet1/RouteTableAssociation
-  VpcPublicSubnet1DefaultRoute3DA9E72A:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: VpcIGWD7BA715C
-      RouteTableId:
-        Ref: VpcPublicSubnet1RouteTable6C95E38E
-    DependsOn:
-      - VpcVPCGWBF912B6E
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PublicSubnet1/DefaultRoute
-  VpcPublicSubnet1EIPD7E02669:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc/PublicSubnet1
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PublicSubnet1/EIP
-  VpcPublicSubnet1NATGateway4D7517AA:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId:
-        Fn::GetAtt:
-          - VpcPublicSubnet1EIPD7E02669
-          - AllocationId
-      SubnetId:
-        Ref: VpcPublicSubnet1Subnet5C2D37C4
-      Tags:
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc/PublicSubnet1
-    DependsOn:
-      - VpcPublicSubnet1DefaultRoute3DA9E72A
-      - VpcPublicSubnet1RouteTableAssociation97140677
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PublicSubnet1/NATGateway
-  VpcPublicSubnet2Subnet691E08A3:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone:
-        Fn::Select:
-          - 1
-          - Fn::GetAZs: ""
-      CidrBlock: 10.0.64.0/18
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: aws-cdk:subnet-name
-          Value: Public
-        - Key: aws-cdk:subnet-type
-          Value: Public
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc/PublicSubnet2
-      VpcId:
-        Ref: Vpc8378EB38
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PublicSubnet2/Subnet
-  VpcPublicSubnet2RouteTable94F7E489:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      Tags:
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc/PublicSubnet2
-      VpcId:
-        Ref: Vpc8378EB38
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PublicSubnet2/RouteTable
-  VpcPublicSubnet2RouteTableAssociationDD5762D8:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: VpcPublicSubnet2RouteTable94F7E489
-      SubnetId:
-        Ref: VpcPublicSubnet2Subnet691E08A3
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PublicSubnet2/RouteTableAssociation
-  VpcPublicSubnet2DefaultRoute97F91067:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: VpcIGWD7BA715C
-      RouteTableId:
-        Ref: VpcPublicSubnet2RouteTable94F7E489
-    DependsOn:
-      - VpcVPCGWBF912B6E
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PublicSubnet2/DefaultRoute
-  VpcPrivateSubnet1Subnet536B997A:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone:
-        Fn::Select:
-          - 0
-          - Fn::GetAZs: ""
-      CidrBlock: 10.0.128.0/18
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: aws-cdk:subnet-name
-          Value: Private
-        - Key: aws-cdk:subnet-type
-          Value: Private
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc/PrivateSubnet1
-      VpcId:
-        Ref: Vpc8378EB38
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PrivateSubnet1/Subnet
-  VpcPrivateSubnet1RouteTableB2C5B500:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      Tags:
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc/PrivateSubnet1
-      VpcId:
-        Ref: Vpc8378EB38
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PrivateSubnet1/RouteTable
-  VpcPrivateSubnet1RouteTableAssociation70C59FA6:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: VpcPrivateSubnet1RouteTableB2C5B500
-      SubnetId:
-        Ref: VpcPrivateSubnet1Subnet536B997A
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PrivateSubnet1/RouteTableAssociation
-  VpcPrivateSubnet1DefaultRouteBE02A9ED:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: VpcPublicSubnet1NATGateway4D7517AA
-      RouteTableId:
-        Ref: VpcPrivateSubnet1RouteTableB2C5B500
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PrivateSubnet1/DefaultRoute
-  VpcPrivateSubnet2Subnet3788AAA1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone:
-        Fn::Select:
-          - 1
-          - Fn::GetAZs: ""
-      CidrBlock: 10.0.192.0/18
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: aws-cdk:subnet-name
-          Value: Private
-        - Key: aws-cdk:subnet-type
-          Value: Private
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc/PrivateSubnet2
-      VpcId:
-        Ref: Vpc8378EB38
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PrivateSubnet2/Subnet
-  VpcPrivateSubnet2RouteTableA678073B:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      Tags:
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc/PrivateSubnet2
-      VpcId:
-        Ref: Vpc8378EB38
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PrivateSubnet2/RouteTable
-  VpcPrivateSubnet2RouteTableAssociationA89CAD56:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: VpcPrivateSubnet2RouteTableA678073B
-      SubnetId:
-        Ref: VpcPrivateSubnet2Subnet3788AAA1
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PrivateSubnet2/RouteTableAssociation
-  VpcPrivateSubnet2DefaultRoute060D2087:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: VpcPublicSubnet1NATGateway4D7517AA
-      RouteTableId:
-        Ref: VpcPrivateSubnet2RouteTableA678073B
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/PrivateSubnet2/DefaultRoute
-  VpcIGWD7BA715C:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/IGW
-  VpcVPCGWBF912B6E:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      InternetGatewayId:
-        Ref: VpcIGWD7BA715C
-      VpcId:
-        Ref: Vpc8378EB38
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/VPCGW
-  VpcS3Endpoint4A3DE4B5:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      RouteTableIds:
-        - Ref: VpcPrivateSubnet1RouteTableB2C5B500
-        - Ref: VpcPrivateSubnet2RouteTableA678073B
-        - Ref: VpcPublicSubnet1RouteTable6C95E38E
-        - Ref: VpcPublicSubnet2RouteTable94F7E489
-      ServiceName:
-        Fn::Join:
-          - ""
-          - - com.amazonaws.
-            - Ref: AWS::Region
-            - .s3
-      Tags:
-        - Key: Name
-          Value: GpuInferenceApiExample/Vpc
-      VpcEndpointType: Gateway
-      VpcId:
-        Ref: Vpc8378EB38
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Vpc/S3Endpoint/Resource
   InferenceTaskSecurityGroup3C4FE9ED:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -287,10 +29,10 @@ Resources:
           IpProtocol: tcp
           ToPort: 443
       VpcId:
-        Ref: Vpc8378EB38
+        Ref: VpcId
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/TaskSecurityGroup/Resource
-  InferenceTaskSecurityGroupfromGpuInferenceApiExampleInferenceAlbSecurityGroupE3B286FA8000D944DA6C:
+      aws:cdk:path: GpuInferenceApi/Inference/TaskSecurityGroup/Resource
+  InferenceTaskSecurityGroupfromGpuInferenceApiInferenceAlbSecurityGroup073F79C980005569A6EC:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       Description: ALB to model container
@@ -306,7 +48,15 @@ Resources:
           - GroupId
       ToPort: 8000
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/TaskSecurityGroup/from GpuInferenceApiExampleInferenceAlbSecurityGroupE3B286FA:8000
+      aws:cdk:path: GpuInferenceApi/Inference/TaskSecurityGroup/from GpuInferenceApiInferenceAlbSecurityGroup073F79C9:8000
+  InferenceCluster6D181EAC:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enhanced
+    Metadata:
+      aws:cdk:path: GpuInferenceApi/Inference/Cluster/Resource
   InferenceInstanceSecurityGroup1503225E:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -318,18 +68,9 @@ Resources:
           IpProtocol: tcp
           ToPort: 443
       VpcId:
-        Ref: Vpc8378EB38
+        Ref: VpcId
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/InstanceSecurityGroup/Resource
-  InferenceCluster6D181EAC:
-    Type: AWS::ECS::Cluster
-    Properties:
-      ClusterName: gpu-inference
-      ClusterSettings:
-        - Name: containerInsights
-          Value: enhanced
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/Cluster/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/InstanceSecurityGroup/Resource
   InferenceGpuCapacityGpuCapacityRole926629D2:
     Type: AWS::IAM::Role
     Properties:
@@ -347,7 +88,7 @@ Resources:
               - Ref: AWS::Partition
               - :iam::aws:policy/AmazonECSInfrastructureRolePolicyForManagedInstances
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/GpuCapacity/GpuCapacityRole/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/GpuCapacity/GpuCapacityRole/Resource
   InferenceGpuCapacityInstanceRole316A67DC:
     Type: AWS::IAM::Role
     Properties:
@@ -379,7 +120,9 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-east-1:"
+                      - ":ecs:"
+                      - Ref: AWS::Region
+                      - ":"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentPollPermissions
@@ -392,7 +135,9 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-east-1:"
+                      - ":ecs:"
+                      - Ref: AWS::Region
+                      - ":"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentTelemetryPermissions
@@ -407,17 +152,17 @@ Resources:
                 Sid: ECSAgentStateChangePermissions
             Version: "2012-10-17"
           PolicyName: ECSInstancePolicy
-      RoleName: ecsInstanceRoleGpuInferenceApiExampInferenceGpuCapacity54385447
+      RoleName: ecsInstanceRoleGpuInferenceApiInferenceGpuCapacity201FA719
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/GpuCapacity/InstanceRole/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/GpuCapacity/InstanceRole/Resource
   InferenceGpuCapacityInstanceProfileB7C43D60:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: ecsInstanceRoleGpuInferenceApiExampInferenceGpuCapacity54385447
+      InstanceProfileName: ecsInstanceRoleGpuInferenceApiInferenceGpuCapacity201FA719
       Roles:
         - Ref: InferenceGpuCapacityInstanceRole316A67DC
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/GpuCapacity/InstanceProfile/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/GpuCapacity/InstanceProfile/Resource
   InferenceGpuCapacity88AB5A98:
     Type: AWS::ECS::CapacityProvider
     Properties:
@@ -456,10 +201,10 @@ Resources:
                   - InferenceInstanceSecurityGroup1503225E
                   - GroupId
             Subnets:
-              - Ref: VpcPrivateSubnet1Subnet536B997A
-              - Ref: VpcPrivateSubnet2Subnet3788AAA1
+              - Ref: PrivateSubnetId1
+              - Ref: PrivateSubnetId2
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/GpuCapacity/GpuCapacity
+      aws:cdk:path: GpuInferenceApi/Inference/GpuCapacity/GpuCapacity
   InferenceModelLogs79C0F310:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -468,7 +213,7 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/ModelLogs/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/ModelLogs/Resource
   InferenceTaskDefTaskRole1A8282F0:
     Type: AWS::IAM::Role
     Properties:
@@ -480,14 +225,14 @@ Resources:
               Service: ecs-tasks.amazonaws.com
         Version: "2012-10-17"
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/TaskDef/TaskRole/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/TaskDef/TaskRole/Resource
   InferenceTaskDefCA602E93:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Command:
             - --model
-            - Qwen/Qwen2.5-1.5B-Instruct
+            - Ref: ModelId
             - --max-model-len
             - "8192"
             - --gpu-memory-utilization
@@ -505,14 +250,16 @@ Resources:
             Retries: 10
             StartPeriod: 300
             Timeout: 5
-          Image: vllm/vllm-openai:v0.6.6
+          Image:
+            Ref: ModelImage
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-group:
                 Ref: InferenceModelLogs79C0F310
               awslogs-stream-prefix: model
-              awslogs-region: us-east-1
+              awslogs-region:
+                Ref: AWS::Region
           Memory: 12288
           Name: model
           PortMappings:
@@ -530,7 +277,7 @@ Resources:
         Fn::GetAtt:
           - InferenceTaskDefExecutionRole9F8D1C74
           - Arn
-      Family: GpuInferenceApiExampleInferenceTaskDef648F76DA
+      Family: GpuInferenceApiInferenceTaskDef5E4F901A
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - MANAGED_INSTANCES
@@ -539,7 +286,7 @@ Resources:
           - InferenceTaskDefTaskRole1A8282F0
           - Arn
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/TaskDef/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/TaskDef/Resource
   InferenceTaskDefExecutionRole9F8D1C74:
     Type: AWS::IAM::Role
     Properties:
@@ -551,7 +298,7 @@ Resources:
               Service: ecs-tasks.amazonaws.com
         Version: "2012-10-17"
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/TaskDef/ExecutionRole/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/TaskDef/ExecutionRole/Resource
   InferenceTaskDefExecutionRoleDefaultPolicy2656CC83:
     Type: AWS::IAM::Policy
     Properties:
@@ -570,33 +317,28 @@ Resources:
       Roles:
         - Ref: InferenceTaskDefExecutionRole9F8D1C74
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/TaskDef/ExecutionRole/DefaultPolicy/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/TaskDef/ExecutionRole/DefaultPolicy/Resource
   InferenceAlb8EDCDCD4:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       LoadBalancerAttributes:
         - Key: deletion_protection.enabled
           Value: "false"
-      Scheme: internet-facing
+      Scheme: internal
       SecurityGroups:
         - Fn::GetAtt:
             - InferenceAlbSecurityGroup43AB8D63
             - GroupId
       Subnets:
-        - Ref: VpcPublicSubnet1Subnet5C2D37C4
-        - Ref: VpcPublicSubnet2Subnet691E08A3
+        - Ref: PrivateSubnetId1
+        - Ref: PrivateSubnetId2
       Type: application
-    DependsOn:
-      - VpcPublicSubnet1DefaultRoute3DA9E72A
-      - VpcPublicSubnet1RouteTableAssociation97140677
-      - VpcPublicSubnet2DefaultRoute97F91067
-      - VpcPublicSubnet2RouteTableAssociationDD5762D8
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/Alb/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/Alb/Resource
   InferenceAlbSecurityGroup43AB8D63:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Automatically created Security Group for ELB GpuInferenceApiExampleInferenceAlbF22D4941
+      GroupDescription: Automatically created Security Group for ELB GpuInferenceApiInferenceAlb6D258621
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
           Description: Allow from anyone on port 80
@@ -604,10 +346,10 @@ Resources:
           IpProtocol: tcp
           ToPort: 80
       VpcId:
-        Ref: Vpc8378EB38
+        Ref: VpcId
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/Alb/SecurityGroup/Resource
-  InferenceAlbSecurityGrouptoGpuInferenceApiExampleInferenceTaskSecurityGroup677158CE80003B3EEF88:
+      aws:cdk:path: GpuInferenceApi/Inference/Alb/SecurityGroup/Resource
+  InferenceAlbSecurityGrouptoGpuInferenceApiInferenceTaskSecurityGroupA527F23D80008213D91F:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
       Description: ALB to model container
@@ -623,7 +365,7 @@ Resources:
       IpProtocol: tcp
       ToPort: 8000
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/Alb/SecurityGroup/to GpuInferenceApiExampleInferenceTaskSecurityGroup677158CE:8000
+      aws:cdk:path: GpuInferenceApi/Inference/Alb/SecurityGroup/to GpuInferenceApiInferenceTaskSecurityGroupA527F23D:8000
   InferenceAlbAlbListener52D2135F:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -636,7 +378,7 @@ Resources:
       Port: 80
       Protocol: HTTP
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/Alb/AlbListener/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/Alb/AlbListener/Resource
   InferenceAlbTargets04311DB9:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -651,9 +393,9 @@ Resources:
           Value: "false"
       TargetType: ip
       VpcId:
-        Ref: Vpc8378EB38
+        Ref: VpcId
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/AlbTargets/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/AlbTargets/Resource
   InferenceServiceCF6639DD:
     Type: AWS::ECS::Service
     Properties:
@@ -684,8 +426,8 @@ Resources:
                 - InferenceTaskSecurityGroup3C4FE9ED
                 - GroupId
           Subnets:
-            - Ref: VpcPrivateSubnet1Subnet536B997A
-            - Ref: VpcPrivateSubnet2Subnet3788AAA1
+            - Ref: PrivateSubnetId1
+            - Ref: PrivateSubnetId2
       TaskDefinition:
         Ref: InferenceTaskDefCA602E93
     DependsOn:
@@ -695,7 +437,7 @@ Resources:
       - InferenceGpuCapacityInstanceProfileB7C43D60
       - InferenceGpuCapacityInstanceRole316A67DC
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/Service
+      aws:cdk:path: GpuInferenceApi/Inference/Service
   InferenceScalingTargetRoleFA0BC3CE:
     Type: AWS::IAM::Role
     Properties:
@@ -709,7 +451,7 @@ Resources:
     DependsOn:
       - InferenceServiceCF6639DD
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/ScalingTarget/Role/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/ScalingTarget/Role/Resource
   InferenceScalingTarget1E97258C:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
@@ -733,11 +475,11 @@ Resources:
     DependsOn:
       - InferenceServiceCF6639DD
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/ScalingTarget/Resource
+      aws:cdk:path: GpuInferenceApi/Inference/ScalingTarget/Resource
   InferenceScalingTargetScalingTrackC8C9444D:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: GpuInferenceApiExampleInferenceScalingTargetScalingTrack28B27B66
+      PolicyName: GpuInferenceApiInferenceScalingTargetScalingTrackCF35BB7A
       PolicyType: TargetTrackingScaling
       ScalingTargetId:
         Ref: InferenceScalingTarget1E97258C
@@ -760,25 +502,5 @@ Resources:
     DependsOn:
       - InferenceServiceCF6639DD
     Metadata:
-      aws:cdk:path: GpuInferenceApiExample/Inference/ScalingTarget/ScalingTrack/Resource
-  CDKMetadata:
-    Type: AWS::CDK::Metadata
-    Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/32T3Y7aQAyFn6X3w3QVVdprStEKabuNCOK2Mo5JvQyeaMYDQlHevcoPBKjUKx9/PhM5J5nMZq8v9uULnOMMy8PM8c42hQIeDJzj74Yws822RrPYyzZfmDztHGORdkLasUmtfVLawM7RxCc2j9Ejg7KXm7kTy1XelQ/QN1A6w8XkgU+gND14JUpB6GYYNhm7uSrgnyOJmpFsa1xKWXsWHa23tiBMgfXyFnyq+y3/C1ZSBYrxH77scWsIo20WLkWl0Jmu8icIVFSuJCoIUlxADch6yYM/cTl6n9kG4uEH7Vn4mtEz8aLAQuHRVVA4MVJrGI62Wfsh/r5eF8iD3/PAn1HuHWMf6aBa43wVbfPuq1smV90achCV0Xkod+BAkKU6ZbaZ17Vj7D/uu4fyez8b3vOhv/dxVJLRc9V38w2EivS2w13bGphskNRHBMdS2aZAcN2/Npj7cB7JUDYB8MBSFcO5KYIH0LZmTdGngH1wv5LWSVsjviT7Gb+esm826y7OZ2SehSTKR7Lrof4Fd768PVUDAAA=
-    Metadata:
-      aws:cdk:path: GpuInferenceApiExample/CDKMetadata/Default
-Outputs:
-  ApiUrl:
-    Value:
-      Fn::Join:
-        - ""
-        - - http://
-          - Fn::GetAtt:
-              - InferenceAlb8EDCDCD4
-              - DNSName
-Parameters:
-  BootstrapVersion:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: /cdk-bootstrap/hnb659fds/version
-    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+      aws:cdk:path: GpuInferenceApi/Inference/ScalingTarget/ScalingTrack/Resource
 

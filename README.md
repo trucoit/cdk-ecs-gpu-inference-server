@@ -49,6 +49,7 @@ Presets fill in the port and health path for the common servers.
 - [The InferenceContainer abstraction](#the-inferencecontainer-abstraction)
 - [Props](#props)
 - [Outputs](#outputs)
+- [CloudFormation templates](#cloudformation-templates)
 - [Sample](#sample)
 - [Build](#build)
 - [Testing](#testing)
@@ -179,6 +180,12 @@ Shared by both modes (`GpuInferenceBaseProps`).
 | `projectName`             | `string`                  | `'gpu-inference'`          | Prefixes resource and log-group names. |
 | `gpuInstanceRequirements` | `GpuInstanceRequirements` | see below                  | Attribute-based instance selection.    |
 | `logRetentionDays`        | `number`                  | `14`                       | Container log-group retention.         |
+| `cluster`                 | `ecs.Cluster`             | a new cluster              | Reuse an existing cluster.             |
+| `capacityProvider`        | `ecs.ManagedInstancesCapacityProvider` | a new provider | Reuse an existing GPU capacity provider. |
+
+To run several inference services in **one cluster**, let the first instance create the
+cluster and capacity provider, then pass its `cluster` and `capacityProvider` to the others.
+Give each instance a distinct `projectName` so their log groups do not collide.
 
 Mode A adds required `dataBucket`, plus optional `workerImage` (defaults to the built-in
 worker), `worker` (typed knobs: `requestStyle`, `inferPath`, `inputField`, `responsePointer`,
@@ -245,29 +252,55 @@ and set the container `gpuCount` to match.
 
 Both constructs expose their created resources as public readonly fields for wiring. The
 shared fields are `cluster`, `capacityProvider`, `taskDefinition`, `modelContainer`,
-`taskSecurityGroup`, `instanceSecurityGroup`, and `modelLogGroup`. `QueueInferenceServer`
-adds `jobQueue`, `deadLetterQueue`, `workerContainer`, `service`, and `scaling`.
-`ApiInferenceServer` adds `loadBalancer`, `listener`, `targetGroup`, `service`, and
-`scalableTarget`.
+`taskSecurityGroup`, `modelLogGroup`, and `instanceSecurityGroup` (present only when the
+construct creates the capacity provider). `QueueInferenceServer` adds `jobQueue`,
+`deadLetterQueue`, `workerContainer`, `service`, and `scaling`. `ApiInferenceServer` adds
+`loadBalancer`, `listener`, `targetGroup`, `service`, and `scalableTarget`.
+
+## CloudFormation templates
+
+For deploying **without CDK**, the repo ships two standalone, parameterized CloudFormation
+templates in [`templates/`](templates), one per mode:
+
+- `gpu-inference-queue.yaml` — queue (async, scale-to-zero) mode.
+- `gpu-inference-api.yaml` — API (online, internal ALB) mode.
+
+You pick the mode by choosing which template to deploy; there is no mode switch inside a
+template. Each takes CloudFormation Parameters (`VpcId`, `PrivateSubnetId1/2`, `ModelId`,
+`ModelImage`, and for the queue template `DataBucketName` + `WorkerImage`) and creates the
+cluster, GPU capacity provider, task, service, and the rest. Deploy one with:
+
+```sh
+aws cloudformation deploy --template-file templates/gpu-inference-queue.yaml \
+  --stack-name gpu-inference --capabilities CAPABILITY_IAM \
+  --parameter-overrides VpcId=vpc-… PrivateSubnetId1=subnet-… PrivateSubnetId2=subnet-… \
+    DataBucketName=my-bucket WorkerImage=<your-ecr-image>
+```
+
+The templates reference the container images by parameter (no CDK assets), so the model
+image defaults to public `vllm/vllm-openai` and you supply a prebuilt worker image.
+
+They are generated from [`cdk/templates/`](cdk/templates) with `make template` in `cdk/`.
 
 ## Sample
 
-A deployable example app lives in [`sample/`](sample). It stands up both modes as separate
-stacks against placeholder images, so you can synth or deploy them without writing glue
-code. Its [README](sample/README.md) covers the commands.
+A deployable CDK app lives in [`sample/`](sample). It runs both modes as two services in one
+shared VPC and cluster, on real vLLM, so you can deploy and exercise it end to end. Its
+[README](sample/README.md) covers the commands.
 
 ## Build
 
 The library lives under [`cdk/`](cdk) and the deployable sample under
 [`sample/`](sample). Each has its own `Makefile`.
 
-Build, lint, and test the library.
+Build, lint, test the library, and generate the standalone templates.
 
 ```sh
 cd cdk
 make build     # tsc -> dist (compiled declarations)
 make lint      # eslint + prettier --check
 make test      # install, lint, then jest (template assertions + cdk-nag)
+make template  # write templates/gpu-inference-{queue,api}.yaml
 ```
 
 Synthesize, deploy, or tear down the sample. Its `install` builds the library first, so a
@@ -275,10 +308,9 @@ fresh checkout works with a bare `make synth`.
 
 ```sh
 cd sample
-make synth                                   # synthesize both stacks
-make template                                # write templates to templates/
-make deploy STACK=GpuInferenceApiExample     # STACK defaults to --all
-make destroy STACK=GpuInferenceApiExample
+make synth                     # synthesize the sample stack
+CDK_DOCKER=finch make deploy   # build the worker image and deploy (Docker/Finch required)
+make destroy
 ```
 
 ## Testing
@@ -290,7 +322,7 @@ run cdk-nag `AwsSolutions` checks with documented suppressions (`cdk/test/nag.te
 ## Docs
 
 - [Architecture](docs/architecture.md)
-- [Sample app](sample/README.md) with one deployable stack per mode
+- [Sample app](sample/README.md) running both modes in one shared cluster
 
 ## Contributing
 
