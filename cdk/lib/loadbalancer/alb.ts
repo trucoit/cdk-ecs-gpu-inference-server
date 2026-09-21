@@ -74,9 +74,10 @@ export function createAlbFrontend(scope: Construct, id: string, props: AlbFronte
       path: props.healthCheckPath,
       interval: Duration.seconds(30),
       timeout: Duration.seconds(10),
-      // A GPU model server that has just loaded weights is healthy immediately,
-      // so flip a target in after two passes rather than the default five.
-      healthyThresholdCount: 2,
+      // Require five consecutive passes (the default) before routing traffic, so
+      // a target only goes in once vLLM is consistently serving, not on the first
+      // response after weights load.
+      healthyThresholdCount: 5,
       // Tolerate a slow-to-respond target (loading a batch, GC) before pulling
       // it out; the default of 2 is aggressive for a single-task GPU service.
       unhealthyThresholdCount: 5,
