@@ -26,7 +26,6 @@ describe('cdk-nag AwsSolutions', () => {
         image: ecs.ContainerImage.fromRegistry('example/model:latest'),
         containerPort: 8091,
       }),
-      workerImage: ecs.ContainerImage.fromRegistry('example/worker:latest'),
     });
     applySuppressions(stack);
     expect(nagErrors(stack)).toStrictEqual([]);

@@ -88,18 +88,36 @@ new QueueInferenceServer(this, 'Inference', {
   vpc, // ec2.IVpc you provide
   vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
   dataBucket, // s3.IBucket you provide, holds job input and output
-  model: InferenceContainer.custom({
-    image: ecs.ContainerImage.fromEcrRepository(repo, 'v1.0.0-model'),
-    containerPort: 8091,
-  }),
-  workerImage: ecs.ContainerImage.fromEcrRepository(repo, 'v1.0.0-worker'),
+  model: InferenceContainer.vllm({ image: ecs.ContainerImage.fromEcrRepository(repo, 'latest') }),
+  // No worker image needed for an OpenAI-compatible server.
 });
 ```
 
-The worker container receives `QUEUE_URL`, `DLQ_URL`, `S3_BUCKET`, `AWS_DEFAULT_REGION`,
-`MODEL_ENDPOINT`, and `HEALTH_ENDPOINT` as environment variables. The task role gets
-consume access on the job queue, send access on the dead-letter queue, and S3 access
-scoped to the `async-input/` and `async-output/` key prefixes.
+The construct ships its own worker (an SQS poller built as a CDK asset, so `deploy` needs
+Docker). It waits for the model to be healthy, reads each job's S3 input, calls the model,
+and writes the result to the matching `async-output/` key. It speaks the OpenAI protocol by
+default and discovers the served model from `/v1/models`, so a vLLM/TGI/SGLang server needs
+no worker configuration.
+
+Tune the worker through typed `worker` props (mapped to the container's env). Supply your
+own `workerImage` only for protocols the built-in worker cannot express, such as
+binary/audio (TTS) or tensor APIs.
+
+```ts
+new QueueInferenceServer(this, 'Inference', {
+  vpc, vpcSubnets, dataBucket,
+  model: InferenceContainer.vllm({ image }),
+  worker: {
+    requestStyle: 'completions', // 'chat' (default) | 'completions' | 'raw'
+    inputField: 'text', // field in the S3 input JSON (default 'prompt')
+    responsePointer: 'choices.0.text', // dotted path into the response
+    // modelId, inferPath, cpu, memoryLimitMiB, environment also available
+  },
+});
+```
+
+The task role gets consume access on the job queue, send access on the dead-letter queue,
+and S3 access scoped to the `async-input/` and `async-output/` key prefixes.
 
 ### Mode B, API (online)
 
@@ -153,9 +171,10 @@ Shared by both modes (`GpuInferenceBaseProps`).
 | `gpuInstanceRequirements` | `GpuInstanceRequirements` | see below                  | Attribute-based instance selection.    |
 | `logRetentionDays`        | `number`                  | `14`                       | Container log-group retention.         |
 
-Mode A adds `dataBucket` and `workerImage` (both required), plus optional `worker`,
-`queue`, `scaling`, `inputPrefix` (`'async-input/'`), and `outputPrefix`
-(`'async-output/'`).
+Mode A adds required `dataBucket`, plus optional `workerImage` (defaults to the built-in
+worker), `worker` (typed knobs: `requestStyle`, `inferPath`, `inputField`, `responsePointer`,
+`modelId`, `cpu`, `memoryLimitMiB`, `environment`), `queue`, `scaling`, `inputPrefix`
+(`'async-input/'`), and `outputPrefix` (`'async-output/'`).
 
 Mode B adds optional `loadBalancer` (internal or internet-facing, listener port, TLS
 certificate) and `scaling` (target tracking, `minCapacity` of 1 or more).

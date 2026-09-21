@@ -39,7 +39,9 @@ client --> S3 async-input/  +  SQS job queue
 
 - One task holds the model container and a worker sidecar. The worker waits for the model
   to report healthy, then polls SQS one message at a time and calls the model over
-  `localhost`.
+  `localhost`. The worker ships with the construct (its source lives in `cdk/worker/` and is
+  built as a CDK container asset at deploy). It is model-agnostic and configured through
+  typed `worker` props; a custom `workerImage` overrides it for non-JSON protocols.
 - Application Auto Scaling drives desired count with two step policies (exact capacity).
   Scale-out to 1 fires on `ApproximateNumberOfMessagesVisible >= 1`. Scale-in to 0 fires
   only when visible plus in-flight messages reach 0, computed with a metric-math
@@ -63,6 +65,7 @@ client --> ALB listener --> IP target group --> ECS service (min 1) --> model co
 
 ## What the consumer provides
 
-The VPC and subnets, the S3 data bucket (Mode A), and the container images are all passed
-in. The library grants the task role scoped access to the queue and to the S3 key prefixes
-but never creates the bucket, so its lifecycle and retention stay under consumer control.
+The VPC and subnets, the S3 data bucket (Mode A), and the model image are passed in. The
+worker image is provided by the construct (overridable). The library grants the task role
+scoped access to the queue and to the S3 key prefixes but never creates the bucket, so its
+lifecycle and retention stay under consumer control.

@@ -19,7 +19,7 @@ function synth(): Template {
       image: ecs.ContainerImage.fromRegistry('example/model:latest'),
       containerPort: 8091,
     }),
-    workerImage: ecs.ContainerImage.fromRegistry('example/worker:latest'),
+    // No workerImage: exercise the library's built-in worker asset.
   });
 
   return Template.fromStack(stack);

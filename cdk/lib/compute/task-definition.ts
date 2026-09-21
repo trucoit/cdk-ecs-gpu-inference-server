@@ -30,6 +30,11 @@ export function addModelContainer(
 ): ecs.ContainerDefinition {
   const port = model.containerPort;
   const healthPath = model.healthCheckPath ?? INFERENCE_CONTAINER_DEFAULTS.healthCheckPath;
+  const healthCheckCommand = model.healthCheckCommand ?? [
+    'CMD-SHELL',
+    `curl -f http://localhost:${port}${healthPath} || exit 1`,
+  ];
+  const startPeriod = model.healthCheckStartPeriodSeconds ?? INFERENCE_CONTAINER_DEFAULTS.healthCheckStartPeriodSeconds;
 
   const container = taskDefinition.addContainer(MODEL_CONTAINER_NAME, {
     image: model.image,
@@ -41,11 +46,11 @@ export function addModelContainer(
     environment: model.environment,
     logging: ecs.LogDrivers.awsLogs({ logGroup, streamPrefix: MODEL_CONTAINER_NAME }),
     healthCheck: {
-      command: ['CMD-SHELL', `curl -f http://localhost:${port}${healthPath} || exit 1`],
+      command: healthCheckCommand,
       interval: Duration.seconds(30),
       timeout: Duration.seconds(5),
       retries: 10,
-      startPeriod: Duration.seconds(300),
+      startPeriod: Duration.seconds(startPeriod),
     },
     // vLLM/Triton and friends benefit from unlimited locked memory for pinned buffers.
     ulimits: [{ name: ecs.UlimitName.MEMLOCK, softLimit: -1, hardLimit: -1 }],

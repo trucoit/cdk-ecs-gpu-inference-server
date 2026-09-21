@@ -379,7 +379,7 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-east-1:"
+                      - ":ecs:us-west-2:"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentPollPermissions
@@ -392,7 +392,7 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-east-1:"
+                      - ":ecs:us-west-2:"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentTelemetryPermissions
@@ -485,24 +485,34 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
-        - Cpu: 2048
+        - Command:
+            - --model
+            - Qwen/Qwen2.5-1.5B-Instruct
+            - --max-model-len
+            - "8192"
+            - --gpu-memory-utilization
+            - "0.9"
+          Cpu: 2048
+          Environment:
+            - Name: VLLM_WORKER_MULTIPROC_METHOD
+              Value: spawn
           Essential: true
           HealthCheck:
             Command:
               - CMD-SHELL
-              - curl -f http://localhost:8000/health || exit 1
+              - python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
             Interval: 30
             Retries: 10
-            StartPeriod: 300
+            StartPeriod: 600
             Timeout: 5
-          Image: public.ecr.aws/amazonlinux/amazonlinux:latest
+          Image: vllm/vllm-openai:v0.6.6
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-group:
                 Ref: InferenceModelLogs79C0F310
               awslogs-stream-prefix: model
-              awslogs-region: us-east-1
+              awslogs-region: us-west-2
           Memory: 12288
           Name: model
           PortMappings:
@@ -567,15 +577,20 @@ Resources:
       LoadBalancerAttributes:
         - Key: deletion_protection.enabled
           Value: "false"
-      Scheme: internal
+      Scheme: internet-facing
       SecurityGroups:
         - Fn::GetAtt:
             - InferenceAlbSecurityGroup43AB8D63
             - GroupId
       Subnets:
-        - Ref: VpcPrivateSubnet1Subnet536B997A
-        - Ref: VpcPrivateSubnet2Subnet3788AAA1
+        - Ref: VpcPublicSubnet1Subnet5C2D37C4
+        - Ref: VpcPublicSubnet2Subnet691E08A3
       Type: application
+    DependsOn:
+      - VpcPublicSubnet1DefaultRoute3DA9E72A
+      - VpcPublicSubnet1RouteTableAssociation97140677
+      - VpcPublicSubnet2DefaultRoute97F91067
+      - VpcPublicSubnet2RouteTableAssociationDD5762D8
     Metadata:
       aws:cdk:path: GpuInferenceApiExample/Inference/Alb/Resource
   InferenceAlbSecurityGroup43AB8D63:
@@ -749,9 +764,18 @@ Resources:
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/32T3YrbQAyFn6X3k+liCnudpmEJbBcTh9wWRVa82kw0ZkZ2CMbvXvwXJyn0Skefzhj52JPY5PXFvnyDS1xgflo4PtgmU8CTgUv80xAmttmXaFZH2acrk1YHx5hVByHt2Ky2vlLawcHRzGe2jNEjg7KXm7kT603alQ/QN1C6wNWkgWtQmh+8EaUgdDMMm4zdUhXw80yiZiT7EteSl55FR+utzQirwHp9C74q+y3/CzZSBIrxH77ucWsIo21WropKoTNN8jcIFJRvJCoIUlxBCch6TYOvOR+9z2wH8fSLjiw8ZfRMvCiwUHh0ZRRqRmoNw9k2Wz/E39dpgTT4Iw/8GaXeMfaRDqo1zhfRNu++uGUy6daQg6iMzkN+AAeCLEWd2GZZlo6x/7jvHvKf/Wx4z4f+3sdRSUbPpO/mOwgF6W2Hu7Y1MNugUh8RHEthmwzBdf/aYO7DeSRD2QXAE0uRDefmCB5A25otRV+FLlvxOdmv+L1Oftikuy5fkXkRKlE+k90O9S8AbL5uSwMAAA==
+      Analytics: v2:deflate64:H4sIAAAAAAAA/31Sy27bMBD8ltxpJvWh7dV1jcBA2gqWkWuxotbKxjQp8KEgEPTvWYmSZTtATjs7nJWGw13K5Y8H+XAHb36hyuNCUyHbPIA6Cqb+t6iWsn2ulVgfzHO2FlksNKk8FgZDz81oZ2PAPRQaZ37mVt5bRRDImrO4B5tt1pe/EB4h4Bu8i8xRw3D+8NYEdIwnQXIydqvAXl9OaIIYGTa7MWVtyYRRem5zVNFReH90NtaDyy+Jrakcev+J3wx0J1B52a519OyvF03wDxiosNwaH8Ao9GuoQfFw5mxD5ai95fbgj7/xQIamjG4ZawKQQXetytE1pLATBCfZ7myKf6iTAf7HgRJ/S2WWX3OINKFOaFvxrZ5sdc5kwnxhDT6Q0hbKAjR/h0zV8H6s6pqHh8d94rNfw1m651V/qSOOyoyaCV+c78FV/OSTh4u2EzDLIAbrFWg2wmvLoN+1JB7CuWZS2Tvebh7I09wcwRXRdWKH3kanhuD+xVDH0AljS5Sv/r5Zfpc/5be7V0+0cNEEOqHcpfoB+oaq+lQDAAA=
     Metadata:
       aws:cdk:path: GpuInferenceApiExample/CDKMetadata/Default
+Outputs:
+  ApiUrl:
+    Value:
+      Fn::Join:
+        - ""
+        - - http://
+          - Fn::GetAtt:
+              - InferenceAlb8EDCDCD4
+              - DNSName
 Parameters:
   BootstrapVersion:
     Type: AWS::SSM::Parameter::Value<String>

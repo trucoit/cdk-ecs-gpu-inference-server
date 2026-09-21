@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { Construct } from 'constructs';
 import { Duration, Stack } from 'aws-cdk-lib';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
@@ -22,9 +23,14 @@ export interface QueueInferenceServerProps extends GpuInferenceBaseProps {
   readonly dataBucket: s3.IBucket;
 
   /**
-   * The worker (SQS poller) container image. Consumer-provided.
+   * Override the worker (SQS poller) container image. By default the construct
+   * builds its own model-agnostic worker (a CDK asset shipped with the library),
+   * configured through {@link worker}. Supply your own image only for protocols
+   * the built-in worker cannot express, such as binary/audio or tensor APIs.
+   *
+   * @default - the library's built-in worker image (built at deploy time; needs Docker)
    */
-  readonly workerImage: ecs.ContainerImage;
+  readonly workerImage?: ecs.ContainerImage;
 
   /** Worker sidecar overrides. */
   readonly worker?: WorkerOptions;
@@ -84,13 +90,18 @@ export class QueueInferenceServer extends GpuInferenceBase {
 
     const modelPort = props.model.containerPort;
     const healthPath = props.model.healthCheckPath ?? '/health';
+    const worker = props.worker ?? {};
+
+    // Default to the library's built-in worker image (a CDK asset). The source
+    // ships with the package under `worker/`, one level up from `dist/`.
+    const workerImage = props.workerImage ?? ecs.ContainerImage.fromAsset(path.join(__dirname, '..', '..', 'worker'));
 
     this.workerContainer = this.taskDefinition.addContainer(WORKER_CONTAINER_NAME, {
-      image: props.workerImage,
-      cpu: props.worker?.cpu ?? 512,
-      memoryLimitMiB: props.worker?.memoryLimitMiB ?? 1024,
+      image: workerImage,
+      cpu: worker.cpu ?? 512,
+      memoryLimitMiB: worker.memoryLimitMiB ?? 1024,
       essential: true,
-      stopTimeout: Duration.seconds(props.worker?.stopTimeoutSeconds ?? 120),
+      stopTimeout: Duration.seconds(worker.stopTimeoutSeconds ?? 120),
       logging: ecs.LogDrivers.awsLogs({ logGroup: workerLogGroup, streamPrefix: WORKER_CONTAINER_NAME }),
       environment: {
         // Injected wiring; consumer `worker.environment` overrides take precedence.
@@ -100,7 +111,15 @@ export class QueueInferenceServer extends GpuInferenceBase {
         AWS_DEFAULT_REGION: region,
         MODEL_ENDPOINT: `http://localhost:${modelPort}`,
         HEALTH_ENDPOINT: `http://localhost:${modelPort}${healthPath}`,
-        ...props.worker?.environment,
+        INPUT_PREFIX: inputPrefix,
+        OUTPUT_PREFIX: outputPrefix,
+        // Typed worker knobs mapped to the built-in worker's env contract.
+        REQUEST_STYLE: worker.requestStyle ?? 'chat',
+        ...(worker.inferPath ? { INFER_PATH: worker.inferPath } : {}),
+        ...(worker.inputField ? { INPUT_FIELD: worker.inputField } : {}),
+        ...(worker.responsePointer !== undefined ? { RESPONSE_POINTER: worker.responsePointer } : {}),
+        ...(worker.modelId ? { MODEL_ID: worker.modelId } : {}),
+        ...worker.environment,
       },
     });
 

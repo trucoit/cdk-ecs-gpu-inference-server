@@ -115,6 +115,45 @@ export interface WorkerOptions {
   readonly environment?: { [key: string]: string };
   /** Seconds ECS waits for graceful worker shutdown. @default 120 */
   readonly stopTimeoutSeconds?: number;
+
+  /**
+   * How the built-in worker shapes the model request. `chat` and `completions`
+   * target the OpenAI-compatible endpoints; `raw` posts the S3 input JSON
+   * unchanged. Ignored when a custom `workerImage` is supplied.
+   *
+   * @default 'chat'
+   */
+  readonly requestStyle?: 'chat' | 'completions' | 'raw';
+
+  /**
+   * Model endpoint path the worker calls.
+   *
+   * @default - '/v1/chat/completions' (chat), '/v1/completions' (completions), '/' (raw)
+   */
+  readonly inferPath?: string;
+
+  /**
+   * Field in the S3 input JSON holding the prompt (chat/completions styles).
+   *
+   * @default 'prompt'
+   */
+  readonly inputField?: string;
+
+  /**
+   * Dotted path into the model response to store as the result (e.g.
+   * `choices.0.message.content`). Empty stores the whole response.
+   *
+   * @default - 'choices.0.message.content' (chat), 'choices.0.text' (completions), '' (raw)
+   */
+  readonly responsePointer?: string;
+
+  /**
+   * Model name the worker sends in requests. When unset, the worker discovers it
+   * from the server's `/v1/models` endpoint.
+   *
+   * @default - discovered via /v1/models
+   */
+  readonly modelId?: string;
 }
 
 /**

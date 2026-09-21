@@ -415,7 +415,7 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-east-1:"
+                      - ":ecs:us-west-2:"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentPollPermissions
@@ -428,7 +428,7 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-east-1:"
+                      - ":ecs:us-west-2:"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentTelemetryPermissions
@@ -572,28 +572,38 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
-        - Cpu: 2048
+        - Command:
+            - --model
+            - Qwen/Qwen2.5-1.5B-Instruct
+            - --max-model-len
+            - "8192"
+            - --gpu-memory-utilization
+            - "0.9"
+          Cpu: 2048
+          Environment:
+            - Name: VLLM_WORKER_MULTIPROC_METHOD
+              Value: spawn
           Essential: true
           HealthCheck:
             Command:
               - CMD-SHELL
-              - curl -f http://localhost:8091/health || exit 1
+              - python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
             Interval: 30
             Retries: 10
-            StartPeriod: 300
+            StartPeriod: 600
             Timeout: 5
-          Image: public.ecr.aws/amazonlinux/amazonlinux:latest
+          Image: vllm/vllm-openai:v0.6.6
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-group:
                 Ref: InferenceModelLogs79C0F310
               awslogs-stream-prefix: model
-              awslogs-region: us-east-1
+              awslogs-region: us-west-2
           Memory: 12288
           Name: model
           PortMappings:
-            - ContainerPort: 8091
+            - ContainerPort: 8000
               Name: model
               Protocol: tcp
           ResourceRequirements:
@@ -618,20 +628,27 @@ Resources:
               Value:
                 Ref: DataBucketE3889A50
             - Name: AWS_DEFAULT_REGION
-              Value: us-east-1
+              Value: us-west-2
             - Name: MODEL_ENDPOINT
-              Value: http://localhost:8091
+              Value: http://localhost:8000
             - Name: HEALTH_ENDPOINT
-              Value: http://localhost:8091/health
+              Value: http://localhost:8000/health
+            - Name: INPUT_PREFIX
+              Value: async-input/
+            - Name: OUTPUT_PREFIX
+              Value: async-output/
+            - Name: REQUEST_STYLE
+              Value: chat
           Essential: true
-          Image: public.ecr.aws/amazonlinux/amazonlinux:latest
+          Image:
+            Fn::Sub: ${AWS::AccountId}.dkr.ecr.us-west-2.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-us-west-2:c159b1da72ba72f610e39f2bcfad70002570e0b3b208d9789021a34481cebef3
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-group:
                 Ref: InferenceWorkerLogsB13603A9
               awslogs-stream-prefix: worker
-              awslogs-region: us-east-1
+              awslogs-region: us-west-2
           Memory: 1024
           Name: worker
           StopTimeout: 120
@@ -674,6 +691,23 @@ Resources:
               Fn::GetAtt:
                 - InferenceModelLogs79C0F310
                 - Arn
+          - Action:
+              - ecr:BatchCheckLayerAvailability
+              - ecr:GetDownloadUrlForLayer
+              - ecr:BatchGetImage
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":ecr:us-west-2:"
+                  - Ref: AWS::AccountId
+                  - :repository/
+                  - Fn::Sub: cdk-hnb659fds-container-assets-${AWS::AccountId}-us-west-2
+          - Action: ecr:GetAuthorizationToken
+            Effect: Allow
+            Resource: "*"
           - Action:
               - logs:CreateLogStream
               - logs:PutLogEvents
@@ -933,9 +967,16 @@ Resources:
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/12S3W7bMAyFn2X3ilZ4A3adZUURYBu8OMjtwNCMy0aRPIlKEAh+98GWf9rcmIefDyiSUqGLb0/66RPcwgrr88rwUadKAM8KbuFvIix0OrSoNid7KDeqjEfDWMWjJenZonYuCu3haGjhC1uH4JBB2NnZ3IvnbdmH3yAvIHSDuyo9X0FoKby1Qt7SbMidjNlaBPD1QlbUSA4tPtu6dWxltM5pRRg9y/3Fu9gOXb4HnQpfdPoe8ZzPHVUOpTOM9wXnvFOEQaeNiUHI938n+QssNFRvbRCwSGEDLSDLvfTuyvXofWR7COcfdGLL054eibMCbMl/dFXkr4zUKYaLTjuXr2CIUwOldyfO/BEto01DGdcEnX66Zl7UpDsV/gWd/kSKQ60shu9S5l3aKWhbwzhcPERxAcGwbXSqEEz/MPbgm/EpfSSVUFtl9xrnSTOYiqNxsb6B4KtOawP+0nsG0XVqR8FF36/Fupr0W/h8Lb7qon/tb4F55aMVvpDe5fgf5KIsYAoDAAA=
+      Analytics: v2:deflate64:H4sIAAAAAAAA/11TwW7bMAz9lt4VrUuBbVc3LYoA2+rFQa8FIzMuG1tyJSpBYPjfJ1l23OZiPj49i3w0vZTLn7fy9gZObqHKw6KmnewKBnUQgXrtUC1l99Iqsdrrl3wlcr+rSRV+p5EjN6ON8Yxb2NU48zOXOWcUAZPRF3EEj+s8hr/AT8B4grPILR0DnC9ea0Yb8CRInYxZxqHXtwY1i5EJzT7qsjWkeZRe0gKVt8TnJ2t8O3T5meiFu5PdvVeHVHdEKeQm2D7PdMp7gcrJblV7F3qMpxP8AxoqLNfaMWiFbgUtqFApt+ZI5ai95rbgDg+4J03TnK4ZoxlIo/2qKtAeSWEvCBrZbUz6BEOcGgg19pT4a2q2NpmqTRVc/TbVZVATjobtKziH7OSDCZOw6yYYzSITz+QGW+OIjT3fg0PhPsJN/zz6oXQCw3Ou+intBbRtAMOegGfjFNSkq7CSAcQ92oKtxs37yhSMbZHUmboMJhHT5ao2vjwBqzfZZTXYJmoG0Pdig854q1AMXsIvUIU3o+DZc+u5F9qUKN/dt+Pyh/wlv9+8O6KF9ZqpQblJ8T8DteFaTwMAAA==
     Metadata:
       aws:cdk:path: GpuInferenceQueueExample/CDKMetadata/Default
+Outputs:
+  DataBucketName:
+    Value:
+      Ref: DataBucketE3889A50
+  JobQueueUrl:
+    Value:
+      Ref: InferenceJobQueueD05BC90C
 Parameters:
   BootstrapVersion:
     Type: AWS::SSM::Parameter::Value<String>

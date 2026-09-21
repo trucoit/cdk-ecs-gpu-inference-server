@@ -53,11 +53,14 @@ function targetProtocolVersion(protocol: InferenceProtocol): elbv2.ApplicationPr
 export function createAlbFrontend(scope: Construct, id: string, props: AlbFrontendProps): AlbFrontend {
   const options = props.options ?? {};
   const httpsCert = options.certificateArn;
+  const internetFacing = options.internetFacing ?? false;
 
   const loadBalancer = new elbv2.ApplicationLoadBalancer(scope, id, {
     vpc: props.vpc,
-    vpcSubnets: props.vpcSubnets,
-    internetFacing: options.internetFacing ?? false,
+    // An internet-facing ALB must sit in public subnets; let it pick them.
+    // An internal ALB shares the task subnets provided by the caller.
+    vpcSubnets: internetFacing ? { subnetType: ec2.SubnetType.PUBLIC } : props.vpcSubnets,
+    internetFacing,
   });
 
   const protocolVersion = targetProtocolVersion(props.protocol);

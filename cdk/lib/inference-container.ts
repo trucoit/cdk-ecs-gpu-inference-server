@@ -76,6 +76,23 @@ export interface InferenceContainerProps {
    * @default - the image's own entrypoint/command
    */
   readonly command?: string[];
+
+  /**
+   * Full ECS health-check command for the model container. Override this when
+   * the image lacks `curl` (the default probe uses it), for example to use a
+   * Python-based check.
+   *
+   * @default - `['CMD-SHELL', 'curl -f http://localhost:<port><healthCheckPath> || exit 1']`
+   */
+  readonly healthCheckCommand?: string[];
+
+  /**
+   * Grace period (seconds) before failed health checks count, giving the server
+   * time to load weights. Raise it for large models or cold model downloads.
+   *
+   * @default 300
+   */
+  readonly healthCheckStartPeriodSeconds?: number;
 }
 
 /**
@@ -130,4 +147,5 @@ export const INFERENCE_CONTAINER_DEFAULTS = {
   gpuCount: 1,
   memoryLimitMiB: 12288,
   cpu: 2048,
+  healthCheckStartPeriodSeconds: 300,
 };

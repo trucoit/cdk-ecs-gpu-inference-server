@@ -1,26 +1,31 @@
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as ecs from 'aws-cdk-lib/aws-ecs';
-import { ApiInferenceServer, InferenceContainer } from 'cdk-ecs-gpu-inference-server';
-import { exampleVpc } from './common';
+import { ApiInferenceServer } from 'cdk-ecs-gpu-inference-server';
+import { exampleVpc, vllmModel } from './common';
 
 /**
- * Mode B, online API fronted by an ALB. Generic across inference servers; here
- * it uses the vLLM preset. Replace the placeholder image with your own.
+ * Mode B, online API. vLLM sits behind an ALB and serves an OpenAI-compatible
+ * endpoint (POST /v1/chat/completions).
+ *
+ * The ALB is internet-facing so the sample is curl-testable. That exposes an
+ * open inference endpoint, which is fine for a throwaway demo but not for
+ * production. Keep it internal (drop `internetFacing`) and reach it from inside
+ * the VPC for anything real.
  */
 export class ApiExampleStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
     const vpc = exampleVpc(this);
 
-    new ApiInferenceServer(this, 'Inference', {
+    const inference = new ApiInferenceServer(this, 'Inference', {
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      model: InferenceContainer.vllm({
-        image: ecs.ContainerImage.fromRegistry('public.ecr.aws/amazonlinux/amazonlinux:latest'),
-      }),
+      model: vllmModel(),
+      loadBalancer: { internetFacing: true },
       scaling: { minCapacity: 1, maxCapacity: 4 },
     });
+
+    new CfnOutput(this, 'ApiUrl', { value: `http://${inference.loadBalancer.loadBalancerDnsName}` });
   }
 }
