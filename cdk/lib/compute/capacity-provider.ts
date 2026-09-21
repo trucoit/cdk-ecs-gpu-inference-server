@@ -29,16 +29,18 @@ export function createGpuCapacityProvider(
     // On-demand for predictable inference latency; consumers can extend this later.
     capacityOptionType: ecs.CapacityOptionType.ON_DEMAND,
     instanceRequirements: {
-      // GPU selection: NVIDIA accelerators only, matching the sample's default.
+      // GPU selection: a single NVIDIA GPU. The defaults keep the pool cheap by
+      // allowing 16 GiB-VRAM parts (T4, e.g. g4dn) and capping vCPU/memory, so
+      // ECS does not reach for large boxes. Raise these for bigger models.
       acceleratorTypes: [AcceleratorType.GPU],
       acceleratorManufacturers: [AcceleratorManufacturer.NVIDIA],
       acceleratorCountMin: requirements?.acceleratorCountMin ?? 1,
       acceleratorCountMax: requirements?.acceleratorCountMax ?? 1,
-      acceleratorTotalMemoryMin: requirements?.acceleratorTotalMemoryMin ?? Size.mebibytes(20480),
+      acceleratorTotalMemoryMin: requirements?.acceleratorTotalMemoryMin ?? Size.mebibytes(16384),
       vCpuCountMin: requirements?.vCpuCountMin ?? 4,
-      vCpuCountMax: requirements?.vCpuCountMax ?? 96,
+      vCpuCountMax: requirements?.vCpuCountMax ?? 16,
       memoryMin: requirements?.memoryMin ?? Size.mebibytes(16384),
-      memoryMax: requirements?.memoryMax ?? Size.mebibytes(524288),
+      memoryMax: requirements?.memoryMax ?? Size.mebibytes(65536),
     },
   });
 

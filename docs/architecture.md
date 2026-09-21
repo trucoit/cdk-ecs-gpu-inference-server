@@ -6,9 +6,10 @@ Both modes share one compute core and differ only in how work reaches the model.
 
 - **ECS cluster** with enhanced Container Insights.
 - **Managed Instances capacity provider** that selects GPU hosts by attribute (NVIDIA
-  accelerator, 1 GPU, >= 20 GiB VRAM, 4 to 96 vCPU, 16 to 512 GiB memory by default).
-  ECS launches, patches, and drains the EC2 GPU instances. The L2 construct creates the
-  infrastructure role and instance profile from the AWS-managed policies.
+  accelerator, 1 GPU, 16 GiB VRAM or more, 4 to 16 vCPU, 16 to 64 GiB memory by default,
+  which favors low-cost families such as g4dn). ECS launches, patches, and drains the EC2
+  GPU instances. The L2 construct creates the infrastructure role and instance profile from
+  the AWS-managed policies. See the README for how to raise these for larger models.
 - **Task definition** with `awsvpc` networking and `MANAGED_INSTANCES` compatibility. The
   model container reserves a GPU and runs an HTTP health check against the server's health
   path. Container resources are reserved at the container level, matching the sample.

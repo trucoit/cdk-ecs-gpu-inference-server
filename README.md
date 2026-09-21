@@ -40,6 +40,7 @@ Presets fill in the port and health path for the common servers.
 - [The InferenceContainer abstraction](#the-inferencecontainer-abstraction)
 - [Props](#props)
 - [Outputs](#outputs)
+- [Sample](#sample)
 - [Build](#build)
 - [Testing](#testing)
 - [Docs](#docs)
@@ -149,7 +150,7 @@ Shared by both modes (`GpuInferenceBaseProps`).
 | `vpcSubnets`              | `ec2.SubnetSelection`     | required                   | Where instances and task ENIs run.     |
 | `model`                   | `InferenceContainerProps` | required                   | Use an `InferenceContainer` preset.    |
 | `projectName`             | `string`                  | `'gpu-inference'`          | Prefixes resource and log-group names. |
-| `gpuInstanceRequirements` | `GpuInstanceRequirements` | NVIDIA GPU, 20 GiB+ VRAM   | Attribute-based instance selection.    |
+| `gpuInstanceRequirements` | `GpuInstanceRequirements` | see below                  | Attribute-based instance selection.    |
 | `logRetentionDays`        | `number`                  | `14`                       | Container log-group retention.         |
 
 Mode A adds `dataBucket` and `workerImage` (both required), plus optional `worker`,
@@ -158,6 +159,59 @@ Mode A adds `dataBucket` and `workerImage` (both required), plus optional `worke
 
 Mode B adds optional `loadBalancer` (internal or internet-facing, listener port, TLS
 certificate) and `scaling` (target tracking, `minCapacity` of 1 or more).
+
+### GPU instance selection
+
+The cluster runs on ECS Managed Instances, which picks EC2 GPU instances by attribute
+rather than a fixed type. There is no single instance type to name. ECS launches whatever
+matches the requirements and has capacity in your subnets' AZs, and it picks up new
+matching families automatically as AWS releases them.
+
+The defaults aim at the cheapest workable GPU hosts.
+
+| Attribute                   | Default   | Effect                                          |
+| --------------------------- | --------- | ----------------------------------------------- |
+| GPU count                   | 1         | One GPU per instance.                           |
+| GPU vendor                  | NVIDIA    | NVIDIA accelerators only.                       |
+| `acceleratorTotalMemoryMin` | 16 GiB    | Allows 16 GiB-VRAM parts such as the T4.         |
+| `vCpuCountMin` / `Max`      | 4 / 16    | Keeps ECS off large boxes.                      |
+| `memoryMin` / `Max`         | 16 / 64 GiB | System memory band.                           |
+
+With those defaults the pool is mostly the low-cost single-GPU families: `g4dn` (T4,
+16 GiB), plus smaller `g5` (A10G, 24 GiB) and `g6` (L4, 24 GiB) sizes when a `g4dn` is not
+available. The model container default reserves 2 vCPU and 12 GiB, which fits a
+`g4dn.xlarge` (4 vCPU, 16 GiB) next to the worker sidecar.
+
+The model container default of 12 GiB is smaller than the original sample's 20 GiB. A model
+that needs more GPU or host memory will not fit a T4, so raise both the instance floor and
+the container reservation together.
+
+```ts
+new QueueInferenceServer(this, 'Inference', {
+  vpc,
+  vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+  dataBucket,
+  workerImage,
+  // Require an A10G/L4-class GPU (24 GiB VRAM) and a larger host.
+  gpuInstanceRequirements: {
+    acceleratorTotalMemoryMin: Size.mebibytes(24576),
+    vCpuCountMin: 8,
+    vCpuCountMax: 48,
+    memoryMin: Size.mebibytes(32768),
+    memoryMax: Size.mebibytes(196608),
+  },
+  model: InferenceContainer.vllm({
+    image,
+    memoryLimitMiB: 28672, // must fit inside the instances above
+    cpu: 8192,
+  }),
+});
+```
+
+Two rules keep a configuration valid. The model container `cpu` and `memoryLimitMiB` (plus
+the worker's, in Mode A) must fit inside `memoryMin`, and `acceleratorTotalMemoryMin` must
+match the VRAM the model actually needs. To allow multi-GPU hosts, raise `acceleratorCountMax`
+and set the container `gpuCount` to match.
 
 ## Outputs
 
@@ -168,34 +222,47 @@ adds `jobQueue`, `deadLetterQueue`, `workerContainer`, `service`, and `scaling`.
 `ApiInferenceServer` adds `loadBalancer`, `listener`, `targetGroup`, `service`, and
 `scalableTarget`.
 
+## Sample
+
+A deployable example app lives in [`sample/`](sample). It stands up both modes as separate
+stacks against placeholder images, so you can synth or deploy them without writing glue
+code. Its [README](sample/README.md) covers the commands.
+
 ## Build
 
-The CDK project lives under [`cdk/`](cdk). A `Makefile` is the entry point for developers
-and CI.
+The library lives under [`cdk/`](cdk) and the deployable sample under
+[`sample/`](sample). Each has its own `Makefile`.
+
+Build, lint, and test the library.
 
 ```sh
 cd cdk
 make build     # tsc -> dist (compiled declarations)
-make synth     # synthesize the example app
-make template  # write the example templates to templates/
 make lint      # eslint + prettier --check
+make test      # install, lint, then jest (template assertions + cdk-nag)
+```
+
+Synthesize, deploy, or tear down the sample. Its `install` builds the library first, so a
+fresh checkout works with a bare `make synth`.
+
+```sh
+cd sample
+make synth                                   # synthesize both stacks
+make template                                # write templates to templates/
+make deploy STACK=GpuInferenceApiExample     # STACK defaults to --all
+make destroy STACK=GpuInferenceApiExample
 ```
 
 ## Testing
 
-```sh
-cd cdk
-make test      # install, lint, then jest (template assertions + cdk-nag)
-```
-
-Tests assert the synthesized template for both modes (`test/queue-inference-server.test.ts`
-and `test/api-inference-server.test.ts`) and run cdk-nag `AwsSolutions` checks with
-documented suppressions (`test/nag.test.ts`).
+The library tests assert the synthesized template for both modes
+(`cdk/test/queue-inference-server.test.ts` and `cdk/test/api-inference-server.test.ts`) and
+run cdk-nag `AwsSolutions` checks with documented suppressions (`cdk/test/nag.test.ts`).
 
 ## Docs
 
 - [Architecture](docs/architecture.md)
-- [Runnable examples](cdk/examples) with one stack per mode, wired to placeholder images
+- [Sample app](sample/README.md) with one deployable stack per mode
 
 ## Contributing
 

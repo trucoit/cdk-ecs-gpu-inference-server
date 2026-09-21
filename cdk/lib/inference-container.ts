@@ -49,16 +49,17 @@ export interface InferenceContainerProps {
   readonly gpuCount?: number;
 
   /**
-   * Hard memory limit (MiB) for the container.
+   * Hard memory limit (MiB) for the container. The default fits a 16 GiB
+   * instance alongside the worker sidecar; raise it for larger models.
    *
-   * @default 20480
+   * @default 12288
    */
   readonly memoryLimitMiB?: number;
 
   /**
    * Reserved CPU units (1024 = 1 vCPU) for the container.
    *
-   * @default 4096
+   * @default 2048
    */
   readonly cpu?: number;
 
@@ -127,6 +128,6 @@ export const INFERENCE_CONTAINER_DEFAULTS = {
   protocol: 'HTTP' as InferenceProtocol,
   healthCheckPath: '/health',
   gpuCount: 1,
-  memoryLimitMiB: 20480,
-  cpu: 4096,
+  memoryLimitMiB: 12288,
+  cpu: 2048,
 };

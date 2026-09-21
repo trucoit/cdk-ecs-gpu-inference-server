@@ -8,7 +8,7 @@ module.exports = tseslint.config(
   },
   ...tseslint.configs.recommended,
   {
-    files: ['examples/**/*.ts', 'lib/**/*.ts', 'test/**/*.ts'],
+    files: ['lib/**/*.ts', 'test/**/*.ts'],
     languageOptions: {
       parserOptions: {
         project: './tsconfig.json',

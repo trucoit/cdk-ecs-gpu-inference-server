@@ -1,0 +1,23 @@
+{
+  "name": "cdk-ecs-gpu-inference-server-sample",
+  "version": "0.1.0",
+  "description": "Deployable sample app that consumes the cdk-ecs-gpu-inference-server constructs (queue + API modes)",
+  "private": true,
+  "scripts": {
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy",
+    "destroy": "cdk destroy"
+  },
+  "dependencies": {
+    "cdk-ecs-gpu-inference-server": "file:../cdk",
+    "aws-cdk-lib": "^2.219.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "aws-cdk": "^2.1029.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0"
+  }
+}

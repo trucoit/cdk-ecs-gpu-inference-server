@@ -2,12 +2,12 @@ import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
-import { ApiInferenceServer, InferenceContainer } from '../lib';
+import { ApiInferenceServer, InferenceContainer } from 'cdk-ecs-gpu-inference-server';
 import { exampleVpc } from './common';
 
 /**
- * Mode B — online API fronted by an ALB. Generic across inference servers;
- * here it uses the vLLM preset. Replace the placeholder image with your own.
+ * Mode B, online API fronted by an ALB. Generic across inference servers; here
+ * it uses the vLLM preset. Replace the placeholder image with your own.
  */
 export class ApiExampleStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {

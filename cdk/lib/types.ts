@@ -12,15 +12,15 @@ export interface GpuInstanceRequirements {
   readonly acceleratorCountMin?: number;
   /** @default 1 */
   readonly acceleratorCountMax?: number;
-  /** Minimum total accelerator (GPU) memory. @default Size.mebibytes(20480) */
+  /** Minimum total accelerator (GPU) memory. @default Size.mebibytes(16384) (16 GiB, allows T4) */
   readonly acceleratorTotalMemoryMin?: Size;
   /** @default 4 */
   readonly vCpuCountMin?: number;
-  /** @default 96 */
+  /** @default 16 */
   readonly vCpuCountMax?: number;
-  /** @default Size.mebibytes(16384) */
+  /** @default Size.mebibytes(16384) (16 GiB) */
   readonly memoryMin?: Size;
-  /** @default Size.mebibytes(524288) */
+  /** @default Size.mebibytes(65536) (64 GiB) */
   readonly memoryMax?: Size;
 }
 

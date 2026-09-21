@@ -7,11 +7,13 @@ on:
     branches: [main, dev]
     paths:
       - 'cdk/**'
+      - 'sample/**'
       - 'templates/**'
       - '.github/workflows/build.yml'
   pull_request:
     paths:
       - 'cdk/**'
+      - 'sample/**'
       - 'templates/**'
       - '.github/workflows/build.yml'
 
@@ -26,28 +28,29 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: cdk
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: cdk/package-lock.json
+          cache-dependency-path: |
+            cdk/package-lock.json
+            sample/package-lock.json
 
-      # `make test` installs, lints, and runs jest (unit assertions + cdk-nag).
+      # Library: install, lint, jest (unit assertions + cdk-nag), then compile.
       - run: make test
-      # Compile the distributable declarations so a broken build fails CI too.
+        working-directory: cdk
       - run: make build
-      # Regenerate the committed example templates from the CDK app.
+        working-directory: cdk
+
+      # Sample: regenerate the committed example templates from the CDK app.
       - run: make template
+        working-directory: sample
 
       # On push, commit the regenerated templates back if they changed.
       - name: Commit regenerated templates
         if: github.event_name == 'push'
-        working-directory: ${{ github.workspace }}
         run: |
           if [ -n "$(git status --porcelain templates)" ]; then
             git config user.name 'github-actions[bot]'

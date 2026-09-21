@@ -6,5 +6,5 @@
     "rootDir": "lib"
   },
   "include": ["lib/**/*.ts"],
-  "exclude": ["node_modules", "dist", "cdk.out", "test", "examples"]
+  "exclude": ["node_modules", "dist", "cdk.out", "test"]
 }

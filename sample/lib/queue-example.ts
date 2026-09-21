@@ -3,15 +3,15 @@ import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import { InferenceContainer, QueueInferenceServer } from '../lib';
+import { InferenceContainer, QueueInferenceServer } from 'cdk-ecs-gpu-inference-server';
 import { exampleVpc } from './common';
 
 /**
- * Mode A — queue-driven, scale-to-zero (the sample's original shape).
+ * Mode A, queue-driven, scale-to-zero (the sample's original shape).
  *
  * The stack creates the satellite resources a consumer owns (VPC, S3 data
  * bucket) and hands them to the construct. Replace the placeholder images with
- * your own ECR images.
+ * your own ECR images before deploying a real workload.
  */
 export class QueueExampleStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
