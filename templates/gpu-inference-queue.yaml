@@ -275,6 +275,8 @@ Resources:
         - Command:
             - --model
             - Ref: ModelId
+            - --dtype
+            - half
             - --max-model-len
             - "8192"
             - --gpu-memory-utilization

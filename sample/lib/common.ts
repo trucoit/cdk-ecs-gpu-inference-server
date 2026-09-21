@@ -28,7 +28,18 @@ const VLLM_IMAGE = 'vllm/vllm-openai:v0.6.6';
 export function vllmModel(): InferenceContainerProps {
   return InferenceContainer.vllm({
     image: ecs.ContainerImage.fromRegistry(VLLM_IMAGE),
-    command: ['--model', MODEL_ID, '--max-model-len', '8192', '--gpu-memory-utilization', '0.9'],
+    // --dtype half (float16) because the default GPU pool includes the T4
+    // (compute capability 7.5), which does not support bfloat16.
+    command: [
+      '--model',
+      MODEL_ID,
+      '--dtype',
+      'half',
+      '--max-model-len',
+      '8192',
+      '--gpu-memory-utilization',
+      '0.9',
+    ],
     environment: { VLLM_WORKER_MULTIPROC_METHOD: 'spawn' },
     healthCheckCommand: [
       'CMD-SHELL',
