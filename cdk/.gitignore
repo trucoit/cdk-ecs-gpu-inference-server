@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+
+# Compiled TypeScript output (declaration + JS emitted to dist/)
+dist
+*.tsbuildinfo
+
+# Loose compiled JS/d.ts next to sources (config files are kept)
+*.js
+!eslint.config.js
+!jest.config.js
+*.d.ts
+
+# CDK synth output and asset staging
+cdk.out
+.cdk.staging
+cdk.context.json
+
+# Test coverage
+coverage
+.nyc_output
+
+# Local env / editor / OS
+.env
+.env.*
+.vscode
+.idea
+.DS_Store
