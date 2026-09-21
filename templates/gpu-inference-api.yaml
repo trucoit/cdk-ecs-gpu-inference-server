@@ -379,7 +379,7 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-west-2:"
+                      - ":ecs:us-east-1:"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentPollPermissions
@@ -392,7 +392,7 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-west-2:"
+                      - ":ecs:us-east-1:"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentTelemetryPermissions
@@ -502,7 +502,7 @@ Resources:
               awslogs-group:
                 Ref: InferenceModelLogs79C0F310
               awslogs-stream-prefix: model
-              awslogs-region: us-west-2
+              awslogs-region: us-east-1
           Memory: 12288
           Name: model
           PortMappings:
@@ -749,7 +749,7 @@ Resources:
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/31Sy27bMBD8ltxpNvGhydV1jMBAEgiWkWuxotbqxjQp8KEgEPTvXYmSZbtATzs7nJWGw13K5eO9vL+DL79Q5XGhqZBtHkAdBVO/W1RL2X7USqwP5iNbiywWmlQeC4Oh52a0szHgHgqNMz9zK++tIghkzVncg80268s7hBcI+AXfInPUMJw/vDUBHeNJkJyM3Sqw1z8nNEGMDJvdmLK2ZMIoPbc5qugofL84G+vB5X+Jrakcev8PvxnoTqDysl3r6NlfL5rgGxiosNwaH8Ao9GuoQfFw5mxD5ai95fbgj894IENTRreMNQHIoLtW5egaUtgJgpNsdzbFP9TJAP/jQIm/pTLLrzlEmlAntK34Vq+2OmcyYb6wBh9IaQtlAZq/Q6ZqeD9Wdc3Dw+O+8tmv4Szd86q/1BFHZUbNhC/O9+AqfvLJw0XbCZhlEIP1CjQb4bVl0O9aEg/hXDOp7B1vNw/kaW6O4IroOrFDb6PrszW2RPnpfzTLn/JJPtx9eqKFiybQCeUu1b8IwetLSgMAAA==
+      Analytics: v2:deflate64:H4sIAAAAAAAA/32T3YrbQAyFn6X3k+liCnudpmEJbBcTh9wWRVa82kw0ZkZ2CMbvXvwXJyn0Skefzhj52JPY5PXFvnyDS1xgflo4PtgmU8CTgUv80xAmttmXaFZH2acrk1YHx5hVByHt2Ky2vlLawcHRzGe2jNEjg7KXm7kT603alQ/QN1C6wNWkgWtQmh+8EaUgdDMMm4zdUhXw80yiZiT7EteSl55FR+utzQirwHp9C74q+y3/CzZSBIrxH77ucWsIo21WropKoTNN8jcIFJRvJCoIUlxBCch6TYOvOR+9z2wH8fSLjiw8ZfRMvCiwUHh0ZRRqRmoNw9k2Wz/E39dpgTT4Iw/8GaXeMfaRDqo1zhfRNu++uGUy6daQg6iMzkN+AAeCLEWd2GZZlo6x/7jvHvKf/Wx4z4f+3sdRSUbPpO/mOwgF6W2Hu7Y1MNugUh8RHEthmwzBdf/aYO7DeSRD2QXAE0uRDefmCB5A25otRV+FLlvxOdmv+L1Oftikuy5fkXkRKlE+k90O9S8AbL5uSwMAAA==
     Metadata:
       aws:cdk:path: GpuInferenceApiExample/CDKMetadata/Default
 Parameters:
