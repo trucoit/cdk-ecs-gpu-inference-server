@@ -5,11 +5,17 @@ on:
     branches: [main, dev]
     paths:
       - 'cdk/**'
+      - 'templates/**'
       - '.github/workflows/build.yml'
   pull_request:
     paths:
       - 'cdk/**'
+      - 'templates/**'
       - '.github/workflows/build.yml'
+
+# Needed so the push job can commit the regenerated templates back.
+permissions:
+  contents: write
 
 concurrency:
   group: build-${{ github.ref }}
@@ -28,7 +34,25 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: cdk/package-lock.json
+
       # `make test` installs, lints, and runs jest (unit assertions + cdk-nag).
       - run: make test
       # Compile the distributable declarations so a broken build fails CI too.
       - run: make build
+      # Regenerate the committed example templates from the CDK app.
+      - run: make template
+
+      # On push, commit the regenerated templates back if they changed.
+      - name: Commit regenerated templates
+        if: github.event_name == 'push'
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ -n "$(git status --porcelain templates)" ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add templates
+            git commit -m 'chore: regenerate example templates from CDK app [skip ci]'
+            git push
+          else
+            echo "Templates already up to date."
+          fi
