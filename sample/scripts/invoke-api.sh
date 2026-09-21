@@ -24,5 +24,11 @@ print(json.dumps({
 }))')"
 
 echo "POST ${API_URL}/v1/chat/completions"
-curl -sS "${API_URL}/v1/chat/completions" -H 'Content-Type: application/json' -d "$BODY"
-echo
+RESPONSE="$(curl -sS "${API_URL}/v1/chat/completions" -H 'Content-Type: application/json' -d "$BODY")"
+
+# Pretty-print with jq when it is installed; fall back to the raw body otherwise.
+if command -v jq >/dev/null 2>&1; then
+  echo "$RESPONSE" | jq .
+else
+  echo "$RESPONSE"
+fi

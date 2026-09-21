@@ -35,8 +35,12 @@ echo "waiting for s3://${BUCKET}/${OUT_KEY} ..."
 for _ in $(seq 1 160); do
   if aws s3 cp "s3://${BUCKET}/${OUT_KEY}" "$TMP/out.json" >/dev/null 2>&1; then
     echo "=== result ==="
-    cat "$TMP/out.json"
-    echo
+    if command -v jq >/dev/null 2>&1; then
+      jq . "$TMP/out.json"
+    else
+      cat "$TMP/out.json"
+      echo
+    fi
     exit 0
   fi
   sleep 15
