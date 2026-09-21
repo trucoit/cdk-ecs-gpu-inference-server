@@ -67,7 +67,11 @@ export class ApiInferenceServer extends GpuInferenceBase {
           containerPort: props.model.containerPort,
         },
       ],
-      healthCheckGracePeriodSeconds: 300,
+      // vLLM's first start pulls a multi-GB image, downloads weights, and loads
+      // them onto the GPU, which can run past five minutes on a cold instance.
+      // ECS ignores ALB health failures during this window, so keep it generous
+      // to avoid killing a task that is still warming.
+      healthCheckGracePeriodSeconds: 900,
     });
     // The listener (and its target group) must exist before the service registers targets.
     this.service.node.addDependency(this.listener);

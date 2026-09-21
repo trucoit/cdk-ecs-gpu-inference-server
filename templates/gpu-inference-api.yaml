@@ -386,7 +386,8 @@ Resources:
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthCheckPath: /health
-      HealthCheckTimeoutSeconds: 5
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
       Port: 8000
       Protocol: HTTP
       ProtocolVersion: HTTP1
@@ -394,6 +395,7 @@ Resources:
         - Key: stickiness.enabled
           Value: "false"
       TargetType: ip
+      UnhealthyThresholdCount: 5
       VpcId:
         Ref: VpcId
     Metadata:
@@ -414,7 +416,7 @@ Resources:
         MaximumPercent: 200
         MinimumHealthyPercent: 100
       DesiredCount: 1
-      HealthCheckGracePeriodSeconds: 300
+      HealthCheckGracePeriodSeconds: 900
       LoadBalancers:
         - ContainerName: model
           ContainerPort: 8000

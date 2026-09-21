@@ -73,7 +73,13 @@ export function createAlbFrontend(scope: Construct, id: string, props: AlbFronte
     healthCheck: {
       path: props.healthCheckPath,
       interval: Duration.seconds(30),
-      timeout: Duration.seconds(5),
+      timeout: Duration.seconds(10),
+      // A GPU model server that has just loaded weights is healthy immediately,
+      // so flip a target in after two passes rather than the default five.
+      healthyThresholdCount: 2,
+      // Tolerate a slow-to-respond target (loading a batch, GC) before pulling
+      // it out; the default of 2 is aggressive for a single-task GPU service.
+      unhealthyThresholdCount: 5,
       // gRPC health checks report app-level status codes; 0 = OK.
       healthyGrpcCodes: protocolVersion === elbv2.ApplicationProtocolVersion.GRPC ? '0' : undefined,
     },
