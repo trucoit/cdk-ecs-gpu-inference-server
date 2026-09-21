@@ -50,12 +50,7 @@ invoke-queue:
 
 # Call the API stack's ALB endpoint (internet-facing in this sample).
 invoke-api:
-	@API_URL=$$(aws cloudformation describe-stacks --stack-name GpuInferenceSample \
-	  --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text); \
-	echo "POST $$API_URL/v1/chat/completions"; \
-	curl -sS "$$API_URL/v1/chat/completions" -H 'Content-Type: application/json' \
-	  -d "$$(python3 -c "import json,sys; print(json.dumps({'model': sys.argv[1], 'messages': [{'role':'user','content': sys.argv[2]}]}))" "$(MODEL)" "$(PROMPT)")"; \
-	echo
+	@MODEL="$(MODEL)" bash scripts/invoke-api.sh "$(PROMPT)"
 
 clean:
 	@rm -rf node_modules cdk.out .template-out
