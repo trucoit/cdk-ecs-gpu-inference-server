@@ -415,7 +415,7 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-west-2:"
+                      - ":ecs:us-east-1:"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentPollPermissions
@@ -428,7 +428,7 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-west-2:"
+                      - ":ecs:us-east-1:"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentTelemetryPermissions
@@ -589,7 +589,7 @@ Resources:
               awslogs-group:
                 Ref: InferenceModelLogs79C0F310
               awslogs-stream-prefix: model
-              awslogs-region: us-west-2
+              awslogs-region: us-east-1
           Memory: 20480
           Name: model
           PortMappings:
@@ -618,7 +618,7 @@ Resources:
               Value:
                 Ref: DataBucketE3889A50
             - Name: AWS_DEFAULT_REGION
-              Value: us-west-2
+              Value: us-east-1
             - Name: MODEL_ENDPOINT
               Value: http://localhost:8091
             - Name: HEALTH_ENDPOINT
@@ -631,7 +631,7 @@ Resources:
               awslogs-group:
                 Ref: InferenceWorkerLogsB13603A9
               awslogs-stream-prefix: worker
-              awslogs-region: us-west-2
+              awslogs-region: us-east-1
           Memory: 1024
           Name: worker
           StopTimeout: 120
@@ -933,7 +933,7 @@ Resources:
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/12SUU/CMBDHP4vvpSom6isiMSRqJiO+mqM7xsloZ3uFkGXf3W7dGPCy+99v/1zvrh3L8dOdvLuBgxupbDsqaCWrlEFtRUA/FaqxrL5LJaZr/Z1MReJXBanUrzRywwa1MJ5xCasCBz6wiXNGETAZfTI3YjZPmvAJ/AaMBziKxNI+yKHwXDPaoHtD7KTLJhx63exQs+hIaHams9KQ5s56SlNU3hIf36zxZdvlOaiFe5DVi1fbeG6nYkhMGPs44JjXApWT1bTwLvTY/O3lB2jIMZtrx6AVuimUoMJJiTV7yjrvNVuC277imjT1e7omRjOQRnvpStHuSWEtCHayWph4BW3sGwhnrCnyazSM1g9VmDxM9W7y06J6HXb0F359efRtrSja71DmLK0FlGUQ7cWDZ+MUFKTz8MaCaB7GEmzePaVLkjKWaXRP1GnSCPriqjA+OwCrjawmBdhd42lFXYsFOuNtsxZtMpS/7nY/fpTP8v7m1xGNrNdMO5SLGP8BABetAgkDAAA=
+      Analytics: v2:deflate64:H4sIAAAAAAAA/12S3W7bMAyFn2X3ilZ4A3adZUURYBu8OMjtwNCMy0aRPIlKEAh+98GWf9rcmIefDyiSUqGLb0/66RPcwgrr88rwUadKAM8KbuFvIix0OrSoNid7KDeqjEfDWMWjJenZonYuCu3haGjhC1uH4JBB2NnZ3IvnbdmH3yAvIHSDuyo9X0FoKby1Qt7SbMidjNlaBPD1QlbUSA4tPtu6dWxltM5pRRg9y/3Fu9gOXb4HnQpfdPoe8ZzPHVUOpTOM9wXnvFOEQaeNiUHI938n+QssNFRvbRCwSGEDLSDLvfTuyvXofWR7COcfdGLL054eibMCbMl/dFXkr4zUKYaLTjuXr2CIUwOldyfO/BEto01DGdcEnX66Zl7UpDsV/gWd/kSKQ60shu9S5l3aKWhbwzhcPERxAcGwbXSqEEz/MPbgm/EpfSSVUFtl9xrnSTOYiqNxsb6B4KtOawP+0nsG0XVqR8FF36/Fupr0W/h8Lb7qon/tb4F55aMVvpDe5fgf5KIsYAoDAAA=
     Metadata:
       aws:cdk:path: GpuInferenceQueueExample/CDKMetadata/Default
 Parameters:
