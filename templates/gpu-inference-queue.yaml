@@ -415,7 +415,7 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-west-2:"
+                      - ":ecs:us-east-1:"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentPollPermissions
@@ -428,7 +428,7 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":ecs:us-west-2:"
+                      - ":ecs:us-east-1:"
                       - Ref: AWS::AccountId
                       - :container-instance/*
                 Sid: ECSAgentTelemetryPermissions
@@ -599,7 +599,7 @@ Resources:
               awslogs-group:
                 Ref: InferenceModelLogs79C0F310
               awslogs-stream-prefix: model
-              awslogs-region: us-west-2
+              awslogs-region: us-east-1
           Memory: 12288
           Name: model
           PortMappings:
@@ -628,7 +628,7 @@ Resources:
               Value:
                 Ref: DataBucketE3889A50
             - Name: AWS_DEFAULT_REGION
-              Value: us-west-2
+              Value: us-east-1
             - Name: MODEL_ENDPOINT
               Value: http://localhost:8000
             - Name: HEALTH_ENDPOINT
@@ -641,14 +641,14 @@ Resources:
               Value: chat
           Essential: true
           Image:
-            Fn::Sub: ${AWS::AccountId}.dkr.ecr.us-west-2.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-us-west-2:c159b1da72ba72f610e39f2bcfad70002570e0b3b208d9789021a34481cebef3
+            Fn::Sub: ${AWS::AccountId}.dkr.ecr.us-east-1.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-${AWS::AccountId}-us-east-1:c159b1da72ba72f610e39f2bcfad70002570e0b3b208d9789021a34481cebef3
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-group:
                 Ref: InferenceWorkerLogsB13603A9
               awslogs-stream-prefix: worker
-              awslogs-region: us-west-2
+              awslogs-region: us-east-1
           Memory: 1024
           Name: worker
           StopTimeout: 120
@@ -701,10 +701,10 @@ Resources:
                 - ""
                 - - "arn:"
                   - Ref: AWS::Partition
-                  - ":ecr:us-west-2:"
+                  - ":ecr:us-east-1:"
                   - Ref: AWS::AccountId
                   - :repository/
-                  - Fn::Sub: cdk-hnb659fds-container-assets-${AWS::AccountId}-us-west-2
+                  - Fn::Sub: cdk-hnb659fds-container-assets-${AWS::AccountId}-us-east-1
           - Action: ecr:GetAuthorizationToken
             Effect: Allow
             Resource: "*"
@@ -967,7 +967,7 @@ Resources:
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/11TwW7bMAz9lt4VrUuBbVc3LYoA2+rFQa8FIzMuG1tyJSpBYPjfJ1l23OZiPj49i3w0vZTLn7fy9gZObqHKw6KmnewKBnUQgXrtUC1l99Iqsdrrl3wlcr+rSRV+p5EjN6ON8Yxb2NU48zOXOWcUAZPRF3EEj+s8hr/AT8B4grPILR0DnC9ea0Yb8CRInYxZxqHXtwY1i5EJzT7qsjWkeZRe0gKVt8TnJ2t8O3T5meiFu5PdvVeHVHdEKeQm2D7PdMp7gcrJblV7F3qMpxP8AxoqLNfaMWiFbgUtqFApt+ZI5ai95rbgDg+4J03TnK4ZoxlIo/2qKtAeSWEvCBrZbUz6BEOcGgg19pT4a2q2NpmqTRVc/TbVZVATjobtKziH7OSDCZOw6yYYzSITz+QGW+OIjT3fg0PhPsJN/zz6oXQCw3Ou+intBbRtAMOegGfjFNSkq7CSAcQ92oKtxs37yhSMbZHUmboMJhHT5ao2vjwBqzfZZTXYJmoG0Pdig854q1AMXsIvUIU3o+DZc+u5F9qUKN/dt+Pyh/wlv9+8O6KF9ZqpQblJ8T8DteFaTwMAAA==
+      Analytics: v2:deflate64:H4sIAAAAAAAA/12T227bMAyGn2X3ilZkA3adpkURYAcvDnJbMDTjsnEkT6QSBIbffZCPbW7Mn59+iKQkL+3yx4N9+AJXWWBxWlR8sE2ugCcDV3ltCJe22ddo1ke3z9Ymi4eKMY8HR5rYrLY+Ku3gUNHMZ7YS8cig7N1kTuJ5k6XwG/QFlK5wM1ngCyjNG2+cUnA0GfpOhmylCvh2JqdmIPsan11Re3Y6WKc0J4yB9fYSfKy7Lj+C1sg32zxGPPV1B9WHzFeMtxn3eWsIxTbrKopSSKuj/AUOSio2ThQckqyhBmS9ZcFfuBi892wHcnqiIzsez+meeKfAjsJnV07hwkitYTjbZuv7K+ji2EAW/JF7fo/m0cahKl+KbX76cjqoUaeBwyuIkIp98niisDlDma6XNK3ZLdVeWH24PYKQkX9im7+RYle6F913rvohbQ3UdcXYvROI6gWhYlfaJkeo0jvaQSiHl/eZ5Ep13rtXOB1MD8bNsfKxuILim21WFYRz8nSibc2WxMeAZLpZcoWSXZkMf6LWUVvjfEH2Xb5elt/tMv0z78K8CNEpn8lu+/gf/L99+VADAAA=
     Metadata:
       aws:cdk:path: GpuInferenceQueueExample/CDKMetadata/Default
 Outputs:
