@@ -503,7 +503,7 @@ Resources:
               - python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
             Interval: 30
             Retries: 10
-            StartPeriod: 600
+            StartPeriod: 300
             Timeout: 5
           Image: vllm/vllm-openai:v0.6.6
           LogConfiguration:

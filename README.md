@@ -15,6 +15,15 @@ This is a CDK port of the
 [`aws-samples/sample-ecs-gpu-inference`](https://github.com/aws-samples/sample-ecs-gpu-inference)
 CloudFormation sample, split into two deployment modes over one shared GPU core.
 
+> [!WARNING]
+> **This provisions GPU EC2 instances that cost real money.** ECS Managed Instances launches
+> NVIDIA GPU hosts (g4dn/g5/g6 class) that bill per hour whenever a task runs, plus a NAT
+> gateway, data transfer, and load balancer in the API mode. The API mode keeps at least one
+> GPU instance running around the clock. An idle g5 or g6 instance alone runs into hundreds
+> of dollars a month, and larger overrides cost far more. Queue mode scales to zero when the
+> queue is empty, but a stuck task or a busy queue keeps a GPU running. Deploy into an
+> account you control, watch your spend, and run `make destroy` when you are done.
+
 The library builds only the compute core. That covers the ECS cluster, the Managed
 Instances GPU capacity provider, the task definition, the service, autoscaling, IAM roles,
 security groups, and log groups. You bring the satellite resources (VPC and subnets, the

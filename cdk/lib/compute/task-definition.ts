@@ -35,6 +35,12 @@ export function addModelContainer(
     `curl -f http://localhost:${port}${healthPath} || exit 1`,
   ];
   const startPeriod = model.healthCheckStartPeriodSeconds ?? INFERENCE_CONTAINER_DEFAULTS.healthCheckStartPeriodSeconds;
+  if (startPeriod > 300) {
+    throw new Error(
+      `healthCheckStartPeriodSeconds must be <= 300 (ECS maximum); got ${startPeriod}. ` +
+        'Bake model weights into the image instead of extending the start period.',
+    );
+  }
 
   const container = taskDefinition.addContainer(MODEL_CONTAINER_NAME, {
     image: model.image,

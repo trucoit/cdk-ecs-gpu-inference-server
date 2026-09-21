@@ -88,7 +88,8 @@ export interface InferenceContainerProps {
 
   /**
    * Grace period (seconds) before failed health checks count, giving the server
-   * time to load weights. Raise it for large models or cold model downloads.
+   * time to load weights. ECS caps this at 300 (the maximum allowed); larger
+   * models should bake weights into the image rather than exceed it.
    *
    * @default 300
    */

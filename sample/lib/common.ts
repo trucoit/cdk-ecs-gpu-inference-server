@@ -34,7 +34,9 @@ export function vllmModel(): InferenceContainerProps {
       'CMD-SHELL',
       "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1",
     ],
-    healthCheckStartPeriodSeconds: 600,
+    // ECS caps startPeriod at 300s. A 1.5B model loads well within that once the
+    // image is pulled (the pull happens before the container starts).
+    healthCheckStartPeriodSeconds: 300,
   });
 }
 

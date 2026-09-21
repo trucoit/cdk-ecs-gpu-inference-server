@@ -12,17 +12,21 @@ STACK ?= --all
 # Model + prompt used by the invoke helpers (keep MODEL in sync with lib/common.ts).
 MODEL ?= Qwen/Qwen2.5-1.5B-Instruct
 PROMPT ?= Hello, who are you?
+# Container builder CDK uses for image assets. Set CDK_DOCKER=finch on machines
+# where Docker Desktop is restricted (e.g. Amazon-managed). CDK reads this env var.
+CDK_DOCKER ?= docker
+export CDK_DOCKER
 
 install:
 	@$(MAKE) -C ../cdk build
 	@npm install
 	@echo "[OK] install"
 
-# The worker image is a CDK asset, so `deploy`/`bootstrap` need Docker to build it.
+# The worker image is a CDK asset, so `deploy`/`bootstrap` need a working builder.
 check-docker:
-	@command -v docker >/dev/null 2>&1 || { echo "ERROR: Docker is required to build the worker image. Install Docker and retry."; exit 1; }
-	@docker info >/dev/null 2>&1 || { echo "ERROR: Docker is installed but not running. Start Docker and retry."; exit 1; }
-	@echo "[OK] docker"
+	@command -v $(CDK_DOCKER) >/dev/null 2>&1 || { echo "ERROR: container builder '$(CDK_DOCKER)' not found. Install it or set CDK_DOCKER=<builder>."; exit 1; }
+	@$(CDK_DOCKER) info >/dev/null 2>&1 || { echo "ERROR: '$(CDK_DOCKER)' is not ready. For finch run 'finch vm start' (first time: 'finch vm init')."; exit 1; }
+	@echo "[OK] container builder: $(CDK_DOCKER)"
 
 synth: install
 	@$(CDK) synth

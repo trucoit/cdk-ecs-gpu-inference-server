@@ -1,5 +1,11 @@
 # GPU inference sample
 
+> [!WARNING]
+> **Deploying this costs real money.** It launches NVIDIA GPU EC2 instances plus a NAT
+> gateway (and a load balancer in API mode). The API stack keeps a GPU instance running
+> around the clock. Deploy into an account you control, watch your spend, and run
+> `make destroy STACK=...` when you are done.
+
 A deployable CDK app that consumes the `cdk-ecs-gpu-inference-server` library from the
 sibling [`cdk/`](../cdk) package and stands up both modes as separate stacks. Both serve
 the same small model, `Qwen/Qwen2.5-1.5B-Instruct`, on **vLLM** (OpenAI-compatible API).
@@ -29,7 +35,10 @@ stage and hash the build context, so they do not need Docker.
 ## Prerequisites
 
 - AWS credentials for the target account.
-- **Docker**, running, for `deploy` and `bootstrap` (the worker asset is built locally).
+- A container builder, running, for `deploy` and `bootstrap` (the worker asset is built
+  locally). On machines where Docker Desktop is restricted (for example Amazon-managed
+  laptops), use Finch: `finch vm init` once, `finch vm start`, then run the deploy commands
+  with `CDK_DOCKER=finch` (for example `CDK_DOCKER=finch make deploy STACK=...`).
 - A bootstrapped environment (`make bootstrap`, once per account and Region).
 - GPU capacity in the account for the AZs your subnets cover.
 
