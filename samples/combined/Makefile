@@ -1,7 +1,7 @@
 # MIT / 2024 Pablo - CDK ECS GPU INFERENCE SERVER - SAMPLE MAKEFILE
 #
-# Deploy and exercise the sample app. It consumes the library from ../cdk as a
-# file: dependency, so `install` builds the library first, then installs here.
+# Deploy and exercise the sample app. It consumes the library from ../../cdk as
+# a file: dependency, so `install` builds the library first, then installs here.
 
 .PHONY: install check-docker synth diff deploy destroy bootstrap invoke-queue invoke-api clean
 
@@ -17,7 +17,7 @@ CDK_DOCKER ?= docker
 export CDK_DOCKER
 
 install:
-	@$(MAKE) -C ../cdk build
+	@$(MAKE) -C ../../cdk build
 	@npm install
 	@echo "[OK] install"
 

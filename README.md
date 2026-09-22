@@ -282,16 +282,22 @@ image defaults to public `vllm/vllm-openai` and you supply a prebuilt worker ima
 
 They are generated from [`cdk/templates/`](cdk/templates) with `make template` in `cdk/`.
 
-## Sample
+## Samples
 
-A deployable CDK app lives in [`sample/`](sample). It runs both modes as two services in one
-shared VPC and cluster, on real vLLM, so you can deploy and exercise it end to end. Its
-[README](sample/README.md) covers the commands.
+All samples live under [`samples/`](samples):
+
+- [`samples/combined/`](samples/combined) — a deployable CDK app that runs both modes as two
+  services in one shared VPC and cluster, on real vLLM, so you can deploy and exercise it end
+  to end. Its [README](samples/combined/README.md) covers the commands.
+- [`samples/queue/`](samples/queue) and [`samples/api/`](samples/api) — single-file,
+  copy-paste stacks for one mode each. They create no satellite resources; the VPC, subnets,
+  and bucket are imported and passed in, showing how a real consumer wires the construct into
+  an existing account.
 
 ## Build
 
 The library lives under [`cdk/`](cdk) and the deployable sample under
-[`sample/`](sample). Each has its own `Makefile`.
+[`samples/combined/`](samples/combined). Each has its own `Makefile`.
 
 Build, lint, test the library, and generate the standalone templates.
 
@@ -307,7 +313,7 @@ Synthesize, deploy, or tear down the sample. Its `install` builds the library fi
 fresh checkout works with a bare `make synth`.
 
 ```sh
-cd sample
+cd samples/combined
 make synth                     # synthesize the sample stack
 CDK_DOCKER=finch make deploy   # build the worker image and deploy (Docker/Finch required)
 make destroy
@@ -322,7 +328,7 @@ run cdk-nag `AwsSolutions` checks with documented suppressions (`cdk/test/nag.te
 ## Docs
 
 - [Architecture](docs/architecture.md)
-- [Sample app](sample/README.md) running both modes in one shared cluster
+- [Samples](samples/README.md): the deployable combined app and the copy-paste per-mode stacks
 
 ## Contributing
 

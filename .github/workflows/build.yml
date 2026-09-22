@@ -7,13 +7,13 @@ on:
     branches: [main, dev]
     paths:
       - 'cdk/**'
-      - 'sample/**'
+      - 'samples/**'
       - 'templates/**'
       - '.github/workflows/build.yml'
   pull_request:
     paths:
       - 'cdk/**'
-      - 'sample/**'
+      - 'samples/**'
       - 'templates/**'
       - '.github/workflows/build.yml'
 
@@ -36,7 +36,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             cdk/package-lock.json
-            sample/package-lock.json
+            samples/combined/package-lock.json
 
       # Library: install, lint, jest (unit assertions + cdk-nag), then compile.
       - run: make test

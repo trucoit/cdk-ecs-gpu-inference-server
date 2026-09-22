@@ -7,7 +7,7 @@
 > you are done.
 
 A deployable CDK app that consumes the `cdk-ecs-gpu-inference-server` library from the
-sibling [`cdk/`](../cdk) package. It is a single stack, `GpuInferenceSample`, that runs both
+library [`cdk/`](../../cdk) package. It is a single stack, `GpuInferenceSample`, that runs both
 modes as two services in **one VPC and one ECS cluster**, sharing the GPU capacity provider.
 Both serve `Qwen/Qwen2.5-1.5B-Instruct` on **vLLM** (OpenAI-compatible API). The model is
 small and ungated so it fits the cheap default GPU (a T4 on `g4dn`) and downloads at
@@ -22,7 +22,7 @@ container start with no token.
 
 ## How it works
 
-The sample depends on the library through a `file:../cdk` path dependency. `make install`
+The sample depends on the library through a `file:../../cdk` path dependency. `make install`
 builds the library first, then installs it here. The stack lives in
 [`lib/sample-stack.ts`](lib/sample-stack.ts) and the app entry point is
 [`bin/app.ts`](bin/app.ts).
@@ -32,7 +32,7 @@ The worker comes from the library (`cdk/worker/`), built as a CDK container asse
 the OpenAI protocol, the sample passes no worker configuration. `make synth` only stages and
 hashes the build context, so it does not need a builder.
 
-(The standalone CloudFormation templates in [`../templates`](../templates) are generated
+(The standalone CloudFormation templates in [`../../templates`](../../templates) are generated
 from the library, not this sample — see the root README.)
 
 ## Prerequisites

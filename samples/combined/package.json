@@ -10,7 +10,7 @@
     "destroy": "cdk destroy"
   },
   "dependencies": {
-    "cdk-ecs-gpu-inference-server": "file:../cdk",
+    "cdk-ecs-gpu-inference-server": "file:../../cdk",
     "aws-cdk-lib": "^2.219.0",
     "constructs": "^10.3.0"
   },
