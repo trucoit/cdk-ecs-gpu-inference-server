@@ -153,40 +153,80 @@ def output_key(input_key):
     return f"{OUTPUT_PREFIX}{rest}"
 
 
+def log_config(model_id):
+    # Print every resolved setting once at startup so the log makes the worker's
+    # behavior self-explanatory. Runs after model discovery so MODEL_ID is known.
+    settings = [
+        ("QUEUE_URL", QUEUE_URL),
+        ("S3_BUCKET", S3_BUCKET),
+        ("MODEL_ENDPOINT", MODEL_ENDPOINT),
+        ("HEALTH_ENDPOINT", HEALTH_ENDPOINT),
+        ("REQUEST_STYLE", REQUEST_STYLE),
+        ("INFER_PATH", INFER_PATH),
+        ("INPUT_FIELD", INPUT_FIELD),
+        ("RESPONSE_POINTER", RESPONSE_POINTER or "(whole response)"),
+        ("MODEL_ID", model_id or "(not used for raw style)"),
+        ("INPUT_PREFIX", INPUT_PREFIX),
+        ("OUTPUT_PREFIX", OUTPUT_PREFIX),
+        ("HEALTH_TIMEOUT_S", HEALTH_TIMEOUT_S),
+        ("POLL_WAIT_S", POLL_WAIT_S),
+        ("REQUEST_TIMEOUT_S", REQUEST_TIMEOUT_S),
+        ("LOG_LEVEL", logging.getLevelName(logger.getEffectiveLevel())),
+    ]
+    logger.info("worker configuration:")
+    for key, value in settings:
+        logger.info("  %-17s = %s", key, value)
+
+
 def handle(message, model_id):
     # Read the S3 input the message points at, call the model, and write the
     # result to the matching output key. Any failure raises, so main() leaves
     # the message for redrive rather than deleting it.
+    msg_id = message.get("MessageId", "unknown")
     input_key = json.loads(message["Body"])["s3_key"]
-    payload = json.loads(s3.get_object(Bucket=S3_BUCKET, Key=input_key)["Body"].read())
+    logger.info("received job %s -> s3://%s/%s", msg_id, S3_BUCKET, input_key)
 
-    response = _get_json(f"{MODEL_ENDPOINT}{INFER_PATH}", data=build_request(payload, model_id))
+    payload = json.loads(s3.get_object(Bucket=S3_BUCKET, Key=input_key)["Body"].read())
+    logger.debug("input payload: %s", payload)
+
+    request = build_request(payload, model_id)
+    logger.info("calling model at %s%s", MODEL_ENDPOINT, INFER_PATH)
+    logger.debug("model request: %s", request)
+    response = _get_json(f"{MODEL_ENDPOINT}{INFER_PATH}", data=request)
+    logger.debug("model response: %s", response)
     result = pointer(response, RESPONSE_POINTER)
 
     # Wrap a scalar result so the output is always a JSON object.
     body = result if isinstance(result, (dict, list)) else {"output": result}
+    out_key = output_key(input_key)
     s3.put_object(
         Bucket=S3_BUCKET,
-        Key=output_key(input_key),
+        Key=out_key,
         Body=json.dumps(body).encode(),
         ContentType="application/json",
     )
-    logger.info("processed %s", input_key)
+    logger.info("wrote result for %s to s3://%s/%s", msg_id, S3_BUCKET, out_key)
 
 
 def main():
     # Wait for the sidecar model, resolve its name once, then long-poll SQS.
     wait_for_model()
     model_id = resolve_model_id()
-    logger.info("polling for jobs (model=%s, style=%s)", model_id, REQUEST_STYLE)
+    log_config(model_id)
+    logger.info("polling for jobs (long poll every %ss)", POLL_WAIT_S)
     while _running:
         resp = sqs.receive_message(QueueUrl=QUEUE_URL, MaxNumberOfMessages=1, WaitTimeSeconds=POLL_WAIT_S)
-        for message in resp.get("Messages", []):
+        messages = resp.get("Messages", [])
+        if not messages:
+            logger.debug("no messages this poll; waiting")
+            continue
+        for message in messages:
             # Delete only after a successful write. On any error, log with the
             # message id and leave it for the queue's redrive policy / DLQ.
             try:
                 handle(message, model_id)
                 sqs.delete_message(QueueUrl=QUEUE_URL, ReceiptHandle=message["ReceiptHandle"])
+                logger.debug("deleted message %s from the queue", message.get("MessageId", "unknown"))
             except Exception:  # noqa: BLE001 - leave the message for redrive/DLQ
                 msg_id = message.get("MessageId", "unknown")
                 logger.exception("error processing message %s", msg_id)
