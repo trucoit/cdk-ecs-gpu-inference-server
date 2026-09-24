@@ -49,8 +49,9 @@ Presets fill in the port and health path for the common servers.
 - [The InferenceContainer abstraction](#the-inferencecontainer-abstraction)
 - [Props](#props)
 - [Outputs](#outputs)
+- [Dashboard](#dashboard)
 - [CloudFormation templates](#cloudformation-templates)
-- [Sample](#sample)
+- [Samples](#samples)
 - [Build](#build)
 - [Testing](#testing)
 - [Docs](#docs)
@@ -256,6 +257,29 @@ shared fields are `cluster`, `capacityProvider`, `taskDefinition`, `modelContain
 construct creates the capacity provider). `QueueInferenceServer` adds `jobQueue`,
 `deadLetterQueue`, `workerContainer`, `service`, and `scaling`. `ApiInferenceServer` adds
 `loadBalancer`, `listener`, `targetGroup`, `service`, and `scalableTarget`.
+
+## Dashboard
+
+`createInferenceDashboard` builds a CloudWatch dashboard for one or more services. Pass the
+mode constructs and it renders a section each, picking the right widgets per mode.
+
+```ts
+import { createInferenceDashboard } from 'cdk-ecs-gpu-inference-server';
+
+createInferenceDashboard(this, 'Dashboard', { services: [queue, api] });
+```
+
+Each section shows a KPI strip (running tasks, queue depth or requests and p99 latency), fleet
+and scaling (running vs desired tasks, plus the queue scale alarms), compute (CPU, memory, and
+network), the mode front-end (SQS depth, in-flight, age, and throughput for queue mode; ALB
+requests, response-time percentiles, HTTP codes, and host health for API mode), and a log query
+over the model log group. ECS metrics are built by hand because the service is an L1
+`CfnService`; SQS and ELB metrics use their own helpers, and task counts come from Container
+Insights (enabled on clusters the library creates).
+
+GPU utilization, VRAM, temperature, and power are not charted yet, because nothing emits them on
+ECS. That work is tracked in
+[issue #1](https://github.com/trucoit/cdk-ecs-gpu-inference-server/issues/1).
 
 ## CloudFormation templates
 

@@ -15,3 +15,6 @@ export { JobQueues, createJobQueues } from './messaging/queues';
 export { QueueScaling, QueueScalingProps, createQueueScaling } from './scaling/queue-scaling';
 export { RequestScalingProps, createRequestScaling } from './scaling/request-scaling';
 export { MODEL_CONTAINER_NAME } from './compute/task-definition';
+
+// Observability.
+export { createInferenceDashboard, InferenceDashboardProps, InferenceService } from './observability/dashboard';

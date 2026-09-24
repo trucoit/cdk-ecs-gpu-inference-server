@@ -2,7 +2,7 @@ import { CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from 'aws-cdk-l
 import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import { ApiInferenceServer, QueueInferenceServer } from 'cdk-ecs-gpu-inference-server';
+import { ApiInferenceServer, QueueInferenceServer, createInferenceDashboard } from 'cdk-ecs-gpu-inference-server';
 import { exampleVpc, vllmModel } from './common';
 
 /**
@@ -57,8 +57,17 @@ export class SampleStack extends Stack {
       scaling: { minCapacity: 1, maxCapacity: 4 },
     });
 
+    // One dashboard charting both services (fleet, compute, queue, API, logs).
+    const dashboard = createInferenceDashboard(this, 'Dashboard', {
+      dashboardName: 'gpu-inference-overview',
+      services: [queue, api],
+    });
+
     new CfnOutput(this, 'DataBucketName', { value: dataBucket.bucketName });
     new CfnOutput(this, 'JobQueueUrl', { value: queue.jobQueue.queueUrl });
     new CfnOutput(this, 'ApiUrl', { value: `http://${api.loadBalancer.loadBalancerDnsName}` });
+    new CfnOutput(this, 'DashboardUrl', {
+      value: `https://${this.region}.console.aws.amazon.com/cloudwatch/home?region=${this.region}#dashboards:name=${dashboard.dashboardName}`,
+    });
   }
 }

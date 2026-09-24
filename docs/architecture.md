@@ -68,6 +68,13 @@ client --> ALB listener --> IP target group --> ECS service (min 1) --> model co
 - gRPC servers use a gRPC-over-HTTP2 target group when `protocol: 'GRPC'` is set on the
   model container.
 
+## Observability
+
+`createInferenceDashboard` is an optional construct that builds a CloudWatch dashboard from the
+mode constructs' public fields (cluster, service, queues, load balancer, target group, log
+group). It charts fleet size, compute, the mode front-end, and logs. GPU metrics are not
+included, because nothing emits them on ECS; that work is tracked in a repo issue.
+
 ## What the consumer provides
 
 The VPC and subnets, the S3 data bucket (Mode A), and the model image are passed in. The

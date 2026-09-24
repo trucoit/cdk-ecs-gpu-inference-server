@@ -67,3 +67,7 @@ make invoke-queue PROMPT="Explain ECS in one sentence."   # submits an S3+SQS jo
 
 The ALB is **internet-facing** so `invoke-api` can reach it. That exposes an open inference
 endpoint, which is fine for a throwaway demo but not for production.
+
+The stack also builds a CloudWatch dashboard covering both services. Open the `DashboardUrl`
+stack output to watch fleet size, CPU and memory, queue depth, API latency, and recent errors
+while you exercise the services.
